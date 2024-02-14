@@ -9,7 +9,7 @@
             "host": "localhost",
             "pathMappings": [
                 {
-                    "localRoot": "${workspaceFolder}/raster_organiser",
+                    "localRoot": "${workspaceFolder}",
                     "remoteRoot": "C:\\Users\\Kuba_MASZYNA\\AppData\\Roaming\\QGIS\\QGIS3\\profiles\\default\\python\\plugins\\zonal_exact"
                 }
             ]

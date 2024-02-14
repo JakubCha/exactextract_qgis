@@ -24,7 +24,6 @@
 from qgis.PyQt.QtWidgets import QMessageBox
 from qgis.core import QgsMessageLog, Qgis
 
-
 class UserCommunication:
     """Class for communication with user"""
     

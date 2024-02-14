@@ -32,6 +32,8 @@ from .resources import *
 from .zonal_exact_dialog import ZonalExactDialog
 import os.path
 
+from osgeo import gdal
+import pandas as pd
 
 class ZonalExact:
     """QGIS Plugin Implementation."""
