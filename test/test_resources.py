@@ -31,7 +31,7 @@ class ZonalExactDialogTest(unittest.TestCase):
 
     def test_icon_png(self):
         """Test we can click OK."""
-        path = ':/plugins/ZonalExact/icons/icon.svg'
+        path = ':/plugins/ZonalExact/icons/exact_icon.svg'
         icon = QIcon(path)
         self.assertFalse(icon.isNull())
 

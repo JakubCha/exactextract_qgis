@@ -26,6 +26,11 @@ import os
 
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
+from qgis.core import QgsMapLayerProxyModel
+
+from osgeo import gdal
+
+from .DialogInputDTO import DialogInputDTO
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -41,4 +46,34 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         # self.<objectname>, and you can use autoconnect slots - see
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
+        self.dialog_input: DialogInputDTO = None
+        
         self.setupUi(self)
+        
+        self.mRasterLayerComboBox.setFilters(QgsMapLayerProxyModel.RasterLayer)
+        self.mVectorLayerComboBox.setFilters(QgsMapLayerProxyModel.VectorLayer)
+        
+        self.mPushButton.clicked.connect(self.calculate)
+
+    def calculate(self):
+        self.get_input_values()
+        pass
+    
+    def get_input_values(self):
+        raster_layer_path, vector_layer_path = self.get_files_paths()
+        parallel_jobs = self.mSpinBox.value()
+        output_file_path = self.mQgsOutputFileWidget.filePath()
+        aggregates_stats_list = self.mAggregatesComboBox.checkedItems()
+        arrays_stats_list = self.mArraysComboBox.checkedItems()
+        
+        self.dialog_input = DialogInputDTO(raster_layer_path, vector_layer_path, parallel_jobs, output_file_path,
+                                           aggregates_stats_list, arrays_stats_list)
+    
+    def get_files_paths(self):
+        raster_layer_path = self.mRasterLayerComboBox.currentLayer().dataProvider().dataSourceUri()
+        vector_layer_path = self.mVectorLayerComboBox.currentLayer().dataProvider().dataSourceUri()
+
+        return raster_layer_path, vector_layer_path
+    
+    
+    

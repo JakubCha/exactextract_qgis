@@ -27,7 +27,7 @@ tags=raster, vector, zonal, statistics, exact, extract, python
 
 homepage=http://homepage
 category=Raster
-icon=icon.svg
+icon=exact_icon.svg
 # experimental flag
 experimental=True
 
