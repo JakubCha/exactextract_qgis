@@ -24,7 +24,7 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
-from qgis.core import QgsMapLayerProxyModel, QgsProject
+from qgis.core import QgsMapLayerProxyModel, QgsProject, QgsApplication
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -49,14 +49,15 @@ class ZonalExact:
         """
         # Save reference to the QGIS interface and initialize project instance
         self.iface = iface
+        self.task_manager = QgsApplication.taskManager()
         self.canvas = self.iface.mapCanvas()
         self.project = QgsProject.instance()
         # initialize UserCommunication
-        self.uc = UserCommunication(iface, 'Raster Organiser')
+        self.uc = UserCommunication(iface, 'Zonal ExactExtract')
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
         # initialize locale
-        locale = QSettings().value('locale/userLocale')[0:2]
+        locale = QSettings().value('locale/userLocale')
         locale_path = os.path.join(
             self.plugin_dir,
             'i18n',
@@ -195,7 +196,7 @@ class ZonalExact:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-            self.dlg = ZonalExactDialog()
+            self.dlg = ZonalExactDialog(uc=self.uc, iface=self.iface, task_manager=self.task_manager)
             
         # show the dialog
         self.dlg.show()
