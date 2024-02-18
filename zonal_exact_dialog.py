@@ -93,14 +93,6 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.tasks = []
         for i in range(self.dialog_input.parallel_jobs):
             temp_vector_gdf = vector_gdf[i:i + batch_size]
-            # task_temp = QgsTask.fromFunction(f'task_{i}', self.calculate_stats, on_finished=self.calculated_stats, 
-            #                                 polygon_layer_gdf=temp_vector_gdf, raster=self.dialog_input.raster_layer_path,
-            #                                 stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list, 
-            #                                 include_cols=['id'], index_column='id', prefix='test_prefix_')
-            # task_temp = QgsTask.fromFunction(f'task_{i}', self.calculate, on_finished=self.calculation_finished)
-            
-            # t1 = MyTask(f'waste cpu {i}', QgsTask.CanCancel, result_list=self.intermediate_result_list)
-            # parent_task.addSubTask(t1, [], QgsTask.ParentDependsOnSubTask)
 
             calculation_subtask = CalculateStatsTask(f'calculation subtask {i}', flags=QgsTask.Silent, result_list=self.intermediate_result_list,
                                                      polygon_layer_gdf=temp_vector_gdf, raster=self.dialog_input.raster_layer_path,
@@ -116,21 +108,6 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
     def after_calculation(self):
         QgsMessageLog.logMessage(f'FINISH: Postprocess task result shape {str(self.postprocess_task.calculated_stats.shape)}')
     
-    # def calculate_stats(self, polygon_layer_gdf: gpd.GeoDataFrame, raster: str, stats: List[str], include_cols=['id'],
-    #                     index_column: str='id', prefix: str=''):
-    #     print("started calculating")
-    #     result_stats = exact_extract(vec=polygon_layer_gdf, rast=raster, ops=stats, include_cols=include_cols, output="pandas")
-        
-    #     return result_stats
-    
-    # def calculated_stats(self, state: bool, description: str, failed_features: int, exception: object):
-    #     if exception is None:
-    #         if result is None:
-    #             print('No data')
-    #         else:
-    #             print("calculated")
-    #             self.calculated_stats_list.append(result)
-        
     
     def get_input_values(self):
         raster_layer_path, vector_layer_path = self.get_files_paths()
@@ -151,41 +128,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         raster_layer_path = self.mRasterLayerComboBox.currentLayer().dataProvider().dataSourceUri()
         vector_layer_path = self.mVectorLayerComboBox.currentLayer().dataProvider().dataSourceUri()
 
-        return raster_layer_path, vector_layer_path
-
-class MyTask(QgsTask):
-    
-    def __init__(self, description, flags, result_list):
-        super().__init__(description, flags)
-        self.result = None
-        self.result_list = result_list
-        self.description = description
-    
-    def run(self):
-        QgsMessageLog.logMessage('Started task {}'.format(self.description))
-        print('crashandburn')
-        self.setProgress(20)
-        time.sleep(3)
-        self.setProgress(40)
-        time.sleep(3)
-        self.setProgress(100)
-        self.result = self.description + ' is done!'
-        self.result_list.append(self.result)
-        
-        return True
-
-class ParentTask(QgsTask):
-    def __init__(self, description, flags, result_list):
-        super().__init__(description, flags)
-        self.description = description
-        self.result_list = result_list
-    
-    def run(self):
-        QgsMessageLog.logMessage(f'Inside PARENT TASK {self.description}')
-        for result in self.result_list:
-            QgsMessageLog.logMessage(f'Showing {result}')
-        return True
-        
+        return raster_layer_path, vector_layer_path        
 
 
 class CalculateStatsTask(QgsTask):
