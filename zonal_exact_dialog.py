@@ -23,19 +23,19 @@
 """
 
 import os
-import time
 from typing import List
+from pathlib import Path
 
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
-from qgis.core import QgsMapLayerProxyModel, QgsTask, QgsApplication, QgsTaskManager, QgsMessageLog
+from qgis.core import QgsMapLayerProxyModel, QgsTask, QgsApplication, QgsTaskManager, QgsMessageLog, QgsVectorLayer
 
 import geopandas as gpd
 import pandas as pd
 from exactextract import exact_extract
 
 from .dialog_input_dto import DialogInputDTO
-from .user_communication import UserCommunication
+from .user_communication import UserCommunication, WidgetPlainTextWriter
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -43,7 +43,7 @@ FORM_CLASS, _ = uic.loadUiType(os.path.join(
 
 
 class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
-    def __init__(self, parent=None, uc: UserCommunication = None, iface = None, task_manager: QgsTaskManager = None):
+    def __init__(self, parent=None, uc: UserCommunication = None, iface = None, project = None, task_manager: QgsTaskManager = None):
         """Constructor."""
         super(ZonalExactDialog, self).__init__(parent)
         # Set up the user interface from Designer through FORM_CLASS.
@@ -59,11 +59,21 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         
         self.uc = uc
         self.iface = iface
+        self.project = project
         self.task_manager: QgsTaskManager = task_manager
         
         self.calculated_stats_list = []
         
         self.setupUi(self)
+        
+        self.widget_console = WidgetPlainTextWriter(self.mPlainText)
+        
+        # controls whether output file is virtual or saved on disk
+        self.flag_virtual = False
+        self.mVirtualCheckBox.setChecked(self.flag_virtual)
+        self.mQgsOutputFileWidget.setFileWidgetButtonVisible(not self.flag_virtual)
+        self.mQgsOutputFileWidget.setReadOnly(self.flag_virtual)
+        self.mVirtualCheckBox.clicked.connect(self.toggle_virtual)
         
         self.mRasterLayerComboBox.setFilters(QgsMapLayerProxyModel.RasterLayer)
         self.mVectorLayerComboBox.setFilters(QgsMapLayerProxyModel.VectorLayer)
@@ -84,19 +94,20 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         if self.postprocess_task is not None:
             self.postprocess_task.taskCompleted.connect(self.save_result)
         
-        pass
-    
+            
     def process_calculations(self, vector_gdf, batch_size):
         self.intermediate_result_list = []
         # parent_task = ParentTask(f'parent task 1', QgsTask.CanCancel, result_list=self.intermediate_result_list)
-        self.postprocess_task = PostprocessStatsTask(f'Zonal ExactExtract task', QgsTask.CanCancel, result_list=self.intermediate_result_list,
-                                                stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
-                                                index_column='id', index_column_dtype=self.input_gdf['id'].dtype, prefix='test_prefix_')
+        self.postprocess_task = PostprocessStatsTask(f'Zonal ExactExtract task', QgsTask.CanCancel, widget_console=self.widget_console,
+                                                     result_list=self.intermediate_result_list,
+                                                    stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
+                                                    index_column='id', index_column_dtype=self.input_gdf['id'].dtype, prefix='test_prefix_')
         self.tasks = []
         for i in range(0, self.input_gdf.shape[0], batch_size):
             temp_vector_gdf = vector_gdf[i:i + batch_size]
 
             calculation_subtask = CalculateStatsTask(f'calculation subtask {i}', flags=QgsTask.Silent, result_list=self.intermediate_result_list,
+                                                     widget_console=self.widget_console,
                                                      polygon_layer_gdf=temp_vector_gdf, raster=self.dialog_input.raster_layer_path,
                                                      stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
                                                      include_cols=['id'])
@@ -105,14 +116,28 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
 
         # self.task_manager.addTask(parent_task)
         self.task_manager.addTask(self.postprocess_task)
-            
+        
             
     def save_result(self):
         calculated_stats_df = self.postprocess_task.calculated_stats
         QgsMessageLog.logMessage(f'Zonal ExactExtract task result shape: {str(calculated_stats_df.shape)}')
+        self.widget_console.write_info(f'Zonal ExactExtract task result shape: {str(calculated_stats_df.shape)}')
         
         polygon_layer_stats_gdf = pd.merge(self.input_gdf, calculated_stats_df, on='id', how='left')
-        polygon_layer_stats_gdf.to_file(self.dialog_input.output_file_path, engine='pyogrio')
+        if self.flag_virtual:
+            virtual_layer = QgsVectorLayer(polygon_layer_stats_gdf.to_json(),"result_zonal_layer","memory")
+            self.project.addMapLayer(virtual_layer)
+        else:
+            polygon_layer_stats_gdf.to_file(self.dialog_input.output_file_path, engine='pyogrio')
+            # Create a QgsVectorLayer instance for the GeoPackage
+            output_project_layer = QgsVectorLayer(self.dialog_input.output_file_path, Path(self.dialog_input.output_file_path).stem, 'ogr')
+
+            # Check if the layer was loaded successfully
+            if not output_project_layer.isValid():
+                print(f"Error: Unable to load layer from {self.dialog_input.output_file_path}")
+            else:
+                # Add the layer to the project
+                self.project.addMapLayer(output_project_layer)
     
     
     def get_input_values(self):
@@ -125,7 +150,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         if not raster_layer_path or not vector_layer_path:
             self.uc.bar_warn(f"You didn't select raster layer or vector layer")
             return
-        if not output_file_path:
+        if not self.flag_virtual and not output_file_path:
             self.uc.bar_warn(f"You didn't select output file path")
             return
         # check if both stats lists are empty
@@ -141,12 +166,18 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         vector_layer_path = self.mVectorLayerComboBox.currentLayer().dataProvider().dataSourceUri()
 
         return raster_layer_path, vector_layer_path        
-
+    
+    def toggle_virtual(self):
+        self.flag_virtual = not self.flag_virtual
+        self.mVirtualCheckBox.setChecked(self.flag_virtual)
+        self.mQgsOutputFileWidget.setFileWidgetButtonVisible(not self.flag_virtual)
+        self.mQgsOutputFileWidget.setReadOnly(self.flag_virtual)
 
 class CalculateStatsTask(QgsTask):
-    def __init__(self, description, flags, result_list, polygon_layer_gdf, raster, stats, include_cols):
+    def __init__(self, description, flags, widget_console, result_list, polygon_layer_gdf, raster, stats, include_cols):
         super().__init__(description, flags)
         self.description = description
+        self.widget_console = widget_console
         self.polygon_layer_gdf = polygon_layer_gdf
         self.raster = raster
         self.stats = stats
@@ -156,7 +187,7 @@ class CalculateStatsTask(QgsTask):
     
     def run(self):
         QgsMessageLog.logMessage(f'Started task: {self.description}')
-        print(f'Started task: {self.description}')
+        self.widget_console.write_info(f'Started task: {self.description}')
         
         result_stats = exact_extract(vec=self.polygon_layer_gdf, rast=self.raster, ops=self.stats, include_cols=self.include_cols, output="pandas")
         self.result_list.append(result_stats)
@@ -167,9 +198,10 @@ class CalculateStatsTask(QgsTask):
         pass
 
 class PostprocessStatsTask(QgsTask):
-    def __init__(self, description, flags, result_list, index_column, index_column_dtype, stats, prefix):
+    def __init__(self, description, flags, widget_console, result_list, index_column, index_column_dtype, stats, prefix):
         super().__init__(description, flags)
         self.description = description
+        self.widget_console = widget_console
         self.result_list = result_list
         self.index_column = index_column
         self.index_column_dtype = index_column_dtype
@@ -180,6 +212,7 @@ class PostprocessStatsTask(QgsTask):
         
     def run(self):
         QgsMessageLog.logMessage(f'Inside Postprocess Task: {self.description}')
+        self.widget_console.write_info(f'Inside Postprocess Task: {self.description}')
         
         # result_indexed_list = [df.set_index(self.index_column) for df in self.result_list]
         calculated_stats = pd.concat(self.result_list)

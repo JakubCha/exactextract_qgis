@@ -196,7 +196,7 @@ class ZonalExact:
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
         if self.first_start == True:
             self.first_start = False
-            self.dlg = ZonalExactDialog(uc=self.uc, iface=self.iface, task_manager=self.task_manager)
+            self.dlg = ZonalExactDialog(uc=self.uc, iface=self.iface, task_manager=self.task_manager, project=self.project)
             
         # show the dialog
         self.dlg.show()

@@ -21,7 +21,7 @@
  ***************************************************************************/
 """
 
-from qgis.PyQt.QtWidgets import QMessageBox
+from qgis.PyQt.QtWidgets import QMessageBox, QPlainTextEdit
 from qgis.core import QgsMessageLog, Qgis
 
 class UserCommunication:
@@ -51,3 +51,19 @@ class UserCommunication:
 
     def clear_bar_messages(self):
         self.iface.messageBar().clearWidgets()
+        
+class WidgetPlainTextWriter:
+    """Class for writing text to PlainTextEdit Widget"""
+    
+    def __init__(self, plain_text_widget: QPlainTextEdit):
+        self.plain_text_widget: QPlainTextEdit = plain_text_widget
+        
+    def write_info(self, msg: str):
+        self.plain_text_widget.appendPlainText(f'[INFO]: {msg}')
+        
+    def write_warn(self, msg: str):
+        self.plain_text_widget.appendPlainText(f'[WARNING]: {msg}')
+        
+    def write_error(self, msg: str):
+        self.plain_text_widget.appendPlainText(f'[ERROR]: {msg}')
+    
