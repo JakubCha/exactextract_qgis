@@ -31,6 +31,7 @@ from qgis.PyQt import QtWidgets
 from qgis.core import QgsMapLayerProxyModel, QgsTask, QgsApplication, QgsTaskManager, QgsMessageLog
 
 import geopandas as gpd
+import pandas as pd
 from exactextract import exact_extract
 
 from .dialog_input_dto import DialogInputDTO
@@ -53,6 +54,8 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.dialog_input: DialogInputDTO = None
         self.tasks = []
         self.intermediate_result_list = []
+        self.postprocess_task: PostprocessStatsTask = None
+        
         self.uc = uc
         self.iface = iface
         self.task_manager: QgsTaskManager = task_manager
@@ -76,12 +79,17 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         # calculate using QgsTask and exactextract
         self.process_calculations(vector_gdf, batch_size)
         # wait for calculations to finish to continue
-        self.task_manager.allTasksFinished.connect(self.after_calculation)
+        if self.postprocess_task is not None:
+            self.postprocess_task.taskCompleted.connect(self.after_calculation)
+        
         pass
     
     def process_calculations(self, vector_gdf, batch_size):
         self.intermediate_result_list = []
-        parent_task = ParentTask(f'parent task 1', QgsTask.CanCancel, result_list=self.intermediate_result_list)
+        # parent_task = ParentTask(f'parent task 1', QgsTask.CanCancel, result_list=self.intermediate_result_list)
+        self.postprocess_task = PostprocessStatsTask(f'postprocess task', QgsTask.CanCancel, result_list=self.intermediate_result_list,
+                                                stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
+                                                index_column='id', prefix='test_prefix_')
         self.tasks = []
         for i in range(self.dialog_input.parallel_jobs):
             temp_vector_gdf = vector_gdf[i:i + batch_size]
@@ -89,35 +97,39 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             #                                 polygon_layer_gdf=temp_vector_gdf, raster=self.dialog_input.raster_layer_path,
             #                                 stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list, 
             #                                 include_cols=['id'], index_column='id', prefix='test_prefix_')
-            
             # task_temp = QgsTask.fromFunction(f'task_{i}', self.calculate, on_finished=self.calculation_finished)
             
-            t1 = MyTask(f'waste cpu {i}', QgsTask.CanCancel, result_list=self.intermediate_result_list)
-            self.tasks.append(t1)
-            parent_task.addSubTask(t1, [], QgsTask.ParentDependsOnSubTask)
+            # t1 = MyTask(f'waste cpu {i}', QgsTask.CanCancel, result_list=self.intermediate_result_list)
+            # parent_task.addSubTask(t1, [], QgsTask.ParentDependsOnSubTask)
 
-        self.task_manager.addTask(parent_task)
+            calculation_subtask = CalculateStatsTask(f'calculation subtask {i}', flags=QgsTask.Silent, result_list=self.intermediate_result_list,
+                                                     polygon_layer_gdf=temp_vector_gdf, raster=self.dialog_input.raster_layer_path,
+                                                     stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
+                                                     include_cols=['id'])
+            self.tasks.append(calculation_subtask)
+            self.postprocess_task.addSubTask(calculation_subtask, [], QgsTask.ParentDependsOnSubTask)
+
+        # self.task_manager.addTask(parent_task)
+        self.task_manager.addTask(self.postprocess_task)
             
             
     def after_calculation(self):
-        for i in range(self.dialog_input.parallel_jobs):
-            # self.uc.bar_info(self.tasks[i].result)
-            print(self.tasks[i].result)
+        QgsMessageLog.logMessage(f'FINISH: Postprocess task result shape {str(self.postprocess_task.calculated_stats.shape)}')
     
-    def calculate_stats(self, polygon_layer_gdf: gpd.GeoDataFrame, raster: str, stats: List[str], include_cols=['id'],
-                        index_column: str='id', prefix: str=''):
-        print("started calculating")
-        result_stats = exact_extract(vec=polygon_layer_gdf, rast=raster, ops=stats, include_cols=include_cols, output="pandas")
+    # def calculate_stats(self, polygon_layer_gdf: gpd.GeoDataFrame, raster: str, stats: List[str], include_cols=['id'],
+    #                     index_column: str='id', prefix: str=''):
+    #     print("started calculating")
+    #     result_stats = exact_extract(vec=polygon_layer_gdf, rast=raster, ops=stats, include_cols=include_cols, output="pandas")
         
-        return result_stats
+    #     return result_stats
     
-    def calculated_stats(self, state: bool, description: str, failed_features: int, exception: object):
-        if exception is None:
-            if result is None:
-                print('No data')
-            else:
-                print("calculated")
-                self.calculated_stats_list.append(result)
+    # def calculated_stats(self, state: bool, description: str, failed_features: int, exception: object):
+    #     if exception is None:
+    #         if result is None:
+    #             print('No data')
+    #         else:
+    #             print("calculated")
+    #             self.calculated_stats_list.append(result)
         
     
     def get_input_values(self):
@@ -177,22 +189,53 @@ class ParentTask(QgsTask):
 
 
 class CalculateStatsTask(QgsTask):
-    def __init__(self, description, flags, polygon_layer_gdf, raster, stats, include_cols):
+    def __init__(self, description, flags, result_list, polygon_layer_gdf, raster, stats, include_cols):
         super().__init__(description, flags)
+        self.description = description
         self.polygon_layer_gdf = polygon_layer_gdf
         self.raster = raster
         self.stats = stats
         self.include_cols = include_cols
         
-        self.result_stats = None
+        self.result_list = result_list
     
     def run(self):
-        QgsMessageLog.logMessage(f'Started task {self.description}')
-        print(f'Started task {self.description}')
+        QgsMessageLog.logMessage(f'Started task: {self.description}')
+        print(f'Started task: {self.description}')
         
         result_stats = exact_extract(vec=self.polygon_layer_gdf, rast=self.raster, ops=self.stats, include_cols=self.include_cols, output="pandas")
+        self.result_list.append(result_stats)
         
+        return True
         
-    def finished():
+    def finished(self, result):
         pass
+
+class PostprocessStatsTask(QgsTask):
+    def __init__(self, description, flags, result_list, index_column, stats, prefix):
+        super().__init__(description, flags)
+        self.description = description
+        self.result_list = result_list
+        self.index_column = index_column
+        self.stats = stats
+        self.prefix = prefix
         
+        self.calculated_stats = None
+        
+    def run(self):
+        QgsMessageLog.logMessage(f'Inside Postprocess Task: {self.description}')
+        
+        result_indexed_list = [df.set_index(self.index_column) for df in self.result_list]
+        calculated_stats = pd.concat(result_indexed_list)
+        
+        if len(self.prefix) > 0:
+            # rename columns to include prefix string
+            rename_dict = {stat: f"{self.prefix}{stat}" for stat in self.stats}
+            calculated_stats = calculated_stats.rename(columns=rename_dict)
+        
+        self.calculated_stats = calculated_stats
+        
+        return True
+    
+    def finished(self, result):
+        pass
