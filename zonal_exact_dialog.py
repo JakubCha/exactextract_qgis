@@ -52,6 +52,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         # #widgets-and-dialogs-with-auto-connect
         self.dialog_input: DialogInputDTO = None
         self.tasks = []
+        self.intermediate_result_list = []
         self.uc = uc
         self.iface = iface
         self.task_manager: QgsTaskManager = task_manager
@@ -69,9 +70,18 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.get_input_values()
         if self.dialog_input is None:
             return
+        # open vector layer and calculate batch size to split vectors
         vector_gdf = gpd.read_file(self.dialog_input.vector_layer_path, layer=self.dialog_input.input_layername, engine='pyogrio').reset_index().rename(columns={"index":"id"}).astype({'id':'int32'})
         batch_size = round(len(vector_gdf) / self.dialog_input.parallel_jobs)
-        
+        # calculate using QgsTask and exactextract
+        self.process_calculations(vector_gdf, batch_size)
+        # wait for calculations to finish to continue
+        self.task_manager.allTasksFinished.connect(self.after_calculation)
+        pass
+    
+    def process_calculations(self, vector_gdf, batch_size):
+        self.intermediate_result_list = []
+        parent_task = ParentTask(f'parent task 1', QgsTask.CanCancel, result_list=self.intermediate_result_list)
         self.tasks = []
         for i in range(self.dialog_input.parallel_jobs):
             temp_vector_gdf = vector_gdf[i:i + batch_size]
@@ -82,17 +92,17 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             
             # task_temp = QgsTask.fromFunction(f'task_{i}', self.calculate, on_finished=self.calculation_finished)
             
-            t1 = MyTask(f'waste cpu {i}', QgsTask.CanCancel)
+            t1 = MyTask(f'waste cpu {i}', QgsTask.CanCancel, result_list=self.intermediate_result_list)
             self.tasks.append(t1)
+            parent_task.addSubTask(t1, [], QgsTask.ParentDependsOnSubTask)
 
-            self.task_manager.addTask(t1)
-        
-        self.task_manager.allTasksFinished.connect(self.postprocess)
-        pass
-    
-    def postprocess(self):
+        self.task_manager.addTask(parent_task)
+            
+            
+    def after_calculation(self):
         for i in range(self.dialog_input.parallel_jobs):
-            self.uc.bar_info(self.tasks[i].result)
+            # self.uc.bar_info(self.tasks[i].result)
+            print(self.tasks[i].result)
     
     def calculate_stats(self, polygon_layer_gdf: gpd.GeoDataFrame, raster: str, stats: List[str], include_cols=['id'],
                         index_column: str='id', prefix: str=''):
@@ -133,9 +143,10 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
 
 class MyTask(QgsTask):
     
-    def __init__(self, description, flags):
+    def __init__(self, description, flags, result_list):
         super().__init__(description, flags)
         self.result = None
+        self.result_list = result_list
         self.description = description
     
     def run(self):
@@ -147,9 +158,22 @@ class MyTask(QgsTask):
         time.sleep(3)
         self.setProgress(100)
         self.result = self.description + ' is done!'
+        self.result_list.append(self.result)
         
         return True
+
+class ParentTask(QgsTask):
+    def __init__(self, description, flags, result_list):
+        super().__init__(description, flags)
+        self.description = description
+        self.result_list = result_list
     
+    def run(self):
+        QgsMessageLog.logMessage(f'Inside PARENT TASK {self.description}')
+        for result in self.result_list:
+            QgsMessageLog.logMessage(f'Showing {result}')
+        return True
+        
 
 
 class CalculateStatsTask(QgsTask):
@@ -163,9 +187,9 @@ class CalculateStatsTask(QgsTask):
         self.result_stats = None
     
     def run(self):
-        QgsMessageLog.logMessage('Started task {}'.format(self.description()))
+        QgsMessageLog.logMessage(f'Started task {self.description}')
+        print(f'Started task {self.description}')
         
-        print("started calculating")
         result_stats = exact_extract(vec=self.polygon_layer_gdf, rast=self.raster, ops=self.stats, include_cols=self.include_cols, output="pandas")
         
         
