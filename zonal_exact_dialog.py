@@ -55,6 +55,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.tasks = []
         self.intermediate_result_list = []
         self.postprocess_task: PostprocessStatsTask = None
+        self.input_gdf: gpd.GeoDataFrame = None
         
         self.uc = uc
         self.iface = iface
@@ -74,24 +75,25 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         if self.dialog_input is None:
             return
         # open vector layer and calculate batch size to split vectors
-        vector_gdf = gpd.read_file(self.dialog_input.vector_layer_path, layer=self.dialog_input.input_layername, engine='pyogrio').reset_index().rename(columns={"index":"id"}).astype({'id':'int32'})
-        batch_size = round(len(vector_gdf) / self.dialog_input.parallel_jobs)
+        self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, layer=self.dialog_input.input_layername, engine='pyogrio')
+        self.input_gdf = self.input_gdf.reset_index().rename(columns={"index":"id"}).astype({'id':'int32'})
+        batch_size = round(len(self.input_gdf) / self.dialog_input.parallel_jobs)
         # calculate using QgsTask and exactextract
-        self.process_calculations(vector_gdf, batch_size)
+        self.process_calculations(self.input_gdf, batch_size)
         # wait for calculations to finish to continue
         if self.postprocess_task is not None:
-            self.postprocess_task.taskCompleted.connect(self.after_calculation)
+            self.postprocess_task.taskCompleted.connect(self.save_result)
         
         pass
     
     def process_calculations(self, vector_gdf, batch_size):
         self.intermediate_result_list = []
         # parent_task = ParentTask(f'parent task 1', QgsTask.CanCancel, result_list=self.intermediate_result_list)
-        self.postprocess_task = PostprocessStatsTask(f'postprocess task', QgsTask.CanCancel, result_list=self.intermediate_result_list,
+        self.postprocess_task = PostprocessStatsTask(f'Zonal ExactExtract task', QgsTask.CanCancel, result_list=self.intermediate_result_list,
                                                 stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
-                                                index_column='id', prefix='test_prefix_')
+                                                index_column='id', index_column_dtype=self.input_gdf['id'].dtype, prefix='test_prefix_')
         self.tasks = []
-        for i in range(self.dialog_input.parallel_jobs):
+        for i in range(0, self.input_gdf.shape[0], batch_size):
             temp_vector_gdf = vector_gdf[i:i + batch_size]
 
             calculation_subtask = CalculateStatsTask(f'calculation subtask {i}', flags=QgsTask.Silent, result_list=self.intermediate_result_list,
@@ -105,8 +107,12 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.task_manager.addTask(self.postprocess_task)
             
             
-    def after_calculation(self):
-        QgsMessageLog.logMessage(f'FINISH: Postprocess task result shape {str(self.postprocess_task.calculated_stats.shape)}')
+    def save_result(self):
+        calculated_stats_df = self.postprocess_task.calculated_stats
+        QgsMessageLog.logMessage(f'Zonal ExactExtract task result shape: {str(calculated_stats_df.shape)}')
+        
+        polygon_layer_stats_gdf = pd.merge(self.input_gdf, calculated_stats_df, on='id', how='left')
+        polygon_layer_stats_gdf.to_file(self.dialog_input.output_file_path, engine='pyogrio')
     
     
     def get_input_values(self):
@@ -116,6 +122,12 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         aggregates_stats_list = self.mAggregatesComboBox.checkedItems()
         arrays_stats_list = self.mArraysComboBox.checkedItems()
         
+        if not raster_layer_path or not vector_layer_path:
+            self.uc.bar_warn(f"You didn't select raster layer or vector layer")
+            return
+        if not output_file_path:
+            self.uc.bar_warn(f"You didn't select output file path")
+            return
         # check if both stats lists are empty
         if not aggregates_stats_list and not arrays_stats_list:
             self.uc.bar_warn(f"You didn't select anything from either Aggregates and Arrays")
@@ -155,11 +167,12 @@ class CalculateStatsTask(QgsTask):
         pass
 
 class PostprocessStatsTask(QgsTask):
-    def __init__(self, description, flags, result_list, index_column, stats, prefix):
+    def __init__(self, description, flags, result_list, index_column, index_column_dtype, stats, prefix):
         super().__init__(description, flags)
         self.description = description
         self.result_list = result_list
         self.index_column = index_column
+        self.index_column_dtype = index_column_dtype
         self.stats = stats
         self.prefix = prefix
         
@@ -168,12 +181,17 @@ class PostprocessStatsTask(QgsTask):
     def run(self):
         QgsMessageLog.logMessage(f'Inside Postprocess Task: {self.description}')
         
-        result_indexed_list = [df.set_index(self.index_column) for df in self.result_list]
-        calculated_stats = pd.concat(result_indexed_list)
+        # result_indexed_list = [df.set_index(self.index_column) for df in self.result_list]
+        calculated_stats = pd.concat(self.result_list)
+        
+        if self.index_column is not None and self.index_column_dtype is not None:
+            # change index dtype to dtype of index column in input layer
+            index_dtype = str(self.index_column_dtype)
+            calculated_stats = calculated_stats.astype({self.index_column:index_dtype})
         
         if len(self.prefix) > 0:
             # rename columns to include prefix string
-            rename_dict = {stat: f"{self.prefix}{stat}" for stat in self.stats}
+            rename_dict = {stat: f"{self.prefix}_{stat}" for stat in self.stats}
             calculated_stats = calculated_stats.rename(columns=rename_dict)
         
         self.calculated_stats = calculated_stats
