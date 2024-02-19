@@ -10,8 +10,8 @@ class DialogInputDTO:
     output_file_path: str
     aggregates_stats_list: List[str]
     arrays_stats_list: List[str]
-    input_layername: str = ''
-    output_layername: str = ''
+    input_layername: str = None
+    output_layername: str = None
     
     def __post_init__(self):
         layer_extension_str = '|layername='

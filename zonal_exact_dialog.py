@@ -85,7 +85,10 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         if self.dialog_input is None:
             return
         # open vector layer and calculate batch size to split vectors
-        self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, layer=self.dialog_input.input_layername, engine='pyogrio')
+        if self.dialog_input.input_layername is not None:
+            self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, layer=self.dialog_input.input_layername, engine='pyogrio')
+        else:
+            self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, engine='pyogrio')
         self.input_gdf = self.input_gdf.reset_index().rename(columns={"index":"id"}).astype({'id':'int32'})
         batch_size = round(len(self.input_gdf) / self.dialog_input.parallel_jobs)
         # calculate using QgsTask and exactextract
