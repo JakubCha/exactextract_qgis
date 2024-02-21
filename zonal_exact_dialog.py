@@ -95,6 +95,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             else:
                 self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, engine='pyogrio')
             self.input_gdf = self.input_gdf.reset_index().rename(columns={"index":"id"}).astype({'id':'int32'})
+            
             batch_size = round(len(self.input_gdf) / self.dialog_input.parallel_jobs)
             # calculate using QgsTask and exactextract
             self.process_calculations(self.input_gdf, batch_size)
@@ -116,6 +117,8 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                                                      result_list=self.intermediate_result_list,
                                                     stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
                                                     index_column='id', index_column_dtype=self.input_gdf['id'].dtype, prefix='test_prefix_')
+        self.postprocess_task.taskCompleted.connect(self.update_progress_bar)
+        
         self.tasks = []
         for i in range(0, self.input_gdf.shape[0], batch_size):
             temp_vector_gdf = vector_gdf[i:i + batch_size]
@@ -125,6 +128,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                                                      polygon_layer_gdf=temp_vector_gdf, raster=self.dialog_input.raster_layer_path,
                                                      stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
                                                      include_cols=['id'])
+            calculation_subtask.taskCompleted.connect(self.update_progress_bar)
             self.tasks.append(calculation_subtask)
             self.postprocess_task.addSubTask(calculation_subtask, [], QgsTask.ParentDependsOnSubTask)
 
@@ -149,10 +153,13 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
 
                 # Check if the layer was loaded successfully
                 if not output_project_layer.isValid():
-                    print(f"Error: Unable to load layer from {self.dialog_input.output_file_path}")
+                    QgsMessageLog.logMessage(f'Unable to load layer from {self.dialog_input.output_file_path}')
+                    self.widget_console.write_error(f'Unable to load layer from {self.dialog_input.output_file_path}')
                 else:
+                    self.widget_console.write_info('Finished calculating statistics')
                     # Add the layer to the project
                     self.project.addMapLayer(output_project_layer)
+                    
         except Exception as exc:
             QgsMessageLog.logMessage(f'ERROR: {exc}')
             self.widget_console.write_error(exc)
@@ -160,14 +167,21 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             self.clean()
             self.mCalculateButton.setEnabled(True)
 
+    def update_progress_bar(self):
+        # calculate progress change as percentage of total tasks completed + parent task
+        progress_change = int((1 / (len(self.tasks) + 1)) * 100)
+        self.mProgressBar.setValue(self.mProgressBar.value() + progress_change)
         
     def clean(self):
+        # reinitialize object values to free memory after calculation is done
         self.dialog_input: DialogInputDTO = None
         self.tasks = []
         self.intermediate_result_list = []
         self.postprocess_task: PostprocessStatsTask = None
         self.input_gdf: gpd.GeoDataFrame = None
         self.calculated_stats_list = []
+        
+        self.mProgressBar.setValue(0)
         
     
     
