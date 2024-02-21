@@ -56,13 +56,12 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.intermediate_result_list = []
         self.postprocess_task: PostprocessStatsTask = None
         self.input_gdf: gpd.GeoDataFrame = None
+        self.calculated_stats_list = []
         
         self.uc = uc
         self.iface = iface
         self.project = project
         self.task_manager: QgsTaskManager = task_manager
-        
-        self.calculated_stats_list = []
         
         self.setupUi(self)
         
@@ -81,21 +80,29 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.mCalculateButton.clicked.connect(self.calculate)
 
     def calculate(self):
-        self.get_input_values()
-        if self.dialog_input is None:
-            return
-        # open vector layer and calculate batch size to split vectors
-        if self.dialog_input.input_layername is not None:
-            self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, layer=self.dialog_input.input_layername, engine='pyogrio')
-        else:
-            self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, engine='pyogrio')
-        self.input_gdf = self.input_gdf.reset_index().rename(columns={"index":"id"}).astype({'id':'int32'})
-        batch_size = round(len(self.input_gdf) / self.dialog_input.parallel_jobs)
-        # calculate using QgsTask and exactextract
-        self.process_calculations(self.input_gdf, batch_size)
-        # wait for calculations to finish to continue
-        if self.postprocess_task is not None:
-            self.postprocess_task.taskCompleted.connect(self.save_result)
+        self.mCalculateButton.setEnabled(False)
+        try:
+            self.get_input_values()
+            if self.dialog_input is None:
+                return
+            # open vector layer and calculate batch size to split vectors
+            if self.dialog_input.input_layername is not None:
+                self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, layer=self.dialog_input.input_layername, engine='pyogrio')
+            else:
+                self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, engine='pyogrio')
+            self.input_gdf = self.input_gdf.reset_index().rename(columns={"index":"id"}).astype({'id':'int32'})
+            batch_size = round(len(self.input_gdf) / self.dialog_input.parallel_jobs)
+            # calculate using QgsTask and exactextract
+            self.process_calculations(self.input_gdf, batch_size)
+            # wait for calculations to finish to continue
+            if self.postprocess_task is not None:
+                self.postprocess_task.taskCompleted.connect(self.save_result)
+        except Exception as exc:
+            QgsMessageLog.logMessage(f'ERROR: {exc}')
+            self.widget_console.write_error(exc)
+            self.mCalculateButton.setEnabled(True)
+            
+            
         
             
     def process_calculations(self, vector_gdf, batch_size):
@@ -126,21 +133,38 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         QgsMessageLog.logMessage(f'Zonal ExactExtract task result shape: {str(calculated_stats_df.shape)}')
         self.widget_console.write_info(f'Zonal ExactExtract task result shape: {str(calculated_stats_df.shape)}')
         
-        polygon_layer_stats_gdf = pd.merge(self.input_gdf, calculated_stats_df, on='id', how='left')
-        if self.flag_virtual:
-            virtual_layer = QgsVectorLayer(polygon_layer_stats_gdf.to_json(),"result_zonal_layer","memory")
-            self.project.addMapLayer(virtual_layer)
-        else:
-            polygon_layer_stats_gdf.to_file(self.dialog_input.output_file_path, engine='pyogrio')
-            # Create a QgsVectorLayer instance for the GeoPackage
-            output_project_layer = QgsVectorLayer(self.dialog_input.output_file_path, Path(self.dialog_input.output_file_path).stem, 'ogr')
-
-            # Check if the layer was loaded successfully
-            if not output_project_layer.isValid():
-                print(f"Error: Unable to load layer from {self.dialog_input.output_file_path}")
+        try:
+            polygon_layer_stats_gdf = pd.merge(self.input_gdf, calculated_stats_df, on='id', how='left')
+            if self.flag_virtual:
+                virtual_layer = QgsVectorLayer(polygon_layer_stats_gdf.to_json(),"result_zonal_layer","memory")
+                self.project.addMapLayer(virtual_layer)
             else:
-                # Add the layer to the project
-                self.project.addMapLayer(output_project_layer)
+                polygon_layer_stats_gdf.to_file(self.dialog_input.output_file_path, engine='pyogrio')
+                # Create a QgsVectorLayer instance for the GeoPackage
+                output_project_layer = QgsVectorLayer(self.dialog_input.output_file_path, Path(self.dialog_input.output_file_path).stem, 'ogr')
+
+                # Check if the layer was loaded successfully
+                if not output_project_layer.isValid():
+                    print(f"Error: Unable to load layer from {self.dialog_input.output_file_path}")
+                else:
+                    # Add the layer to the project
+                    self.project.addMapLayer(output_project_layer)
+        except Exception as exc:
+            QgsMessageLog.logMessage(f'ERROR: {exc}')
+            self.widget_console.write_error(exc)
+        finally:
+            self.clean()
+            self.mCalculateButton.setEnabled(True)
+
+        
+    def clean(self):
+        self.dialog_input: DialogInputDTO = None
+        self.tasks = []
+        self.intermediate_result_list = []
+        self.postprocess_task: PostprocessStatsTask = None
+        self.input_gdf: gpd.GeoDataFrame = None
+        self.calculated_stats_list = []
+        
     
     
     def get_input_values(self):
