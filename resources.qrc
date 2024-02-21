@@ -1,5 +1,5 @@
 <RCC>
   <qresource prefix="/plugins/zonal_exact">
-    <file>icons/icon.svg</file>
+    <file>icons/exact_icon.svg</file>
   </qresource>
 </RCC>
