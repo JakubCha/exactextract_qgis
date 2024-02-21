@@ -51,13 +51,17 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         # self.<objectname>, and you can use autoconnect slots - see
         # http://qt-project.org/doc/qt-4.8/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
+        # Initiate  a new instance of the dialog input DTO class to hold all input data
         self.dialog_input: DialogInputDTO = None
+        # Initiate an empty list for storing tasks in queue
         self.tasks = []
+        # Initiate an empty list to store intermediate results of zonal statistics calculation
         self.intermediate_result_list = []
+        # Initiate main task that will hold aggregated data from child calculating tasks
         self.postprocess_task: PostprocessStatsTask = None
         self.input_gdf: gpd.GeoDataFrame = None
         self.calculated_stats_list = []
-        
+        # assign qgis internal variables to class variables
         self.uc = uc
         self.iface = iface
         self.project = project
