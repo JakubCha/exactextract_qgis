@@ -6,14 +6,15 @@
 name=Zonal Exact Extract
 qgisMinimumVersion=3.30
 description=Zonal Statistics of rasters using Exact Extract library
-version=0.1
+version=0.2
 author=Jakub Charyton
 email=jakub.charyton@gmail.com
 
-about=Zonal Statistics using ExactExtract library.
+about=Zonal Statistics using ExactExtract library. This plugin requires pandas, geopandas and exactextract libraries installed in python.
 
-tracker=http://bugs
-repository=http://repo
+
+tracker=https://github.com/JakubCha/exactextract_qgis
+repository=https://github.com/JakubCha/exactextract_qgis
 # End of mandatory metadata
 
 # Recommended items:
@@ -25,9 +26,9 @@ hasProcessingProvider=no
 # Tags are comma separated with spaces allowed
 tags=raster, vector, zonal, statistics, exact, extract, python
 
-homepage=http://homepage
+homepage=https://github.com/JakubCha/exactextract_qgis
 category=Raster
-icon=exact_icon.svg
+icon=icons/exact_icon.svg
 # experimental flag
 experimental=True
 
@@ -38,9 +39,6 @@ deprecated=False
 # (or upgraded) can be specified.
 # Check the documentation for more information.
 # plugin_dependencies=
-
-Category of the plugin: Raster, Vector, Database or Web
-# category=
 
 # If the plugin can run on QGIS Server.
 server=False

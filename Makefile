@@ -48,7 +48,7 @@ PY_FILES = \
 
 UI_FILES = zonal_exact_dialog_base.ui
 
-EXTRAS = metadata.txt icon.png
+EXTRAS = metadata.txt exact_icon.png
 
 EXTRA_DIRS =
 

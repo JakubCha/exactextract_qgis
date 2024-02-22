@@ -81,6 +81,11 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.mRasterLayerComboBox.setFilters(QgsMapLayerProxyModel.RasterLayer)
         self.mVectorLayerComboBox.setFilters(QgsMapLayerProxyModel.VectorLayer)
         
+        if self.mVectorLayerComboBox.currentLayer() is not None:
+            self.mFieldComboBox.setLayer(self.mVectorLayerComboBox.currentLayer()) # set layer for initialization
+        # connect signal so whenever vector layer changes it updates fields
+        self.mVectorLayerComboBox.layerChanged.connect(self.mFieldComboBox.setLayer)
+        
         self.mCalculateButton.clicked.connect(self.calculate)
 
     def calculate(self):
@@ -94,7 +99,8 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, layer=self.dialog_input.input_layername, engine='pyogrio')
             else:
                 self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, engine='pyogrio')
-            self.input_gdf = self.input_gdf.reset_index().rename(columns={"index":"id"}).astype({'id':'int32'})
+            if 'id' not in self.input_gdf.columns:
+                self.input_gdf = self.input_gdf.reset_index().rename(columns={"index":"id"}).astype({'id':'int32'})
             
             batch_size = round(len(self.input_gdf) / self.dialog_input.parallel_jobs)
             # calculate using QgsTask and exactextract
@@ -106,9 +112,6 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             QgsMessageLog.logMessage(f'ERROR: {exc}')
             self.widget_console.write_error(exc)
             self.mCalculateButton.setEnabled(True)
-            
-            
-        
             
     def process_calculations(self, vector_gdf, batch_size):
         self.intermediate_result_list = []
