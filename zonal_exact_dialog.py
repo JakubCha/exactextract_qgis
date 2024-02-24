@@ -26,7 +26,6 @@ import os
 from typing import List
 from pathlib import Path
 
-from osgeo import gdal
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
 from qgis.core import QgsMapLayerProxyModel, QgsTask, QgsApplication, QgsTaskManager, QgsMessageLog, QgsVectorLayer
