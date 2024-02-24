@@ -10,6 +10,7 @@ class DialogInputDTO:
     output_file_path: str
     aggregates_stats_list: List[str]
     arrays_stats_list: List[str]
+    prefix: str
     input_layername: str = None
     output_layername: str = None
 

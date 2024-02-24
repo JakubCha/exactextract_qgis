@@ -19,14 +19,14 @@
      <property name="sizeConstraint">
       <enum>QLayout::SetMaximumSize</enum>
      </property>
-     <item row="2" column="4" colspan="2" alignment="Qt::AlignHCenter">
+     <item row="3" column="4" colspan="2" alignment="Qt::AlignHCenter">
       <widget class="QLabel" name="label_8">
        <property name="text">
         <string>Batch size</string>
        </property>
       </widget>
      </item>
-     <item row="2" column="0" alignment="Qt::AlignHCenter">
+     <item row="3" column="0" alignment="Qt::AlignHCenter">
       <widget class="QLabel" name="label_3">
        <property name="text">
         <string>Number of 
@@ -34,7 +34,7 @@ subtasks</string>
        </property>
       </widget>
      </item>
-     <item row="5" column="1" colspan="6">
+     <item row="6" column="1" colspan="6">
       <widget class="QgsCheckableComboBox" name="mAggregatesComboBox">
        <property name="acceptDrops">
         <bool>false</bool>
@@ -155,21 +155,21 @@ subtasks</string>
        </item>
       </widget>
      </item>
-     <item row="2" column="6">
+     <item row="3" column="6">
       <widget class="QSpinBox" name="mSpinBox_2">
        <property name="value">
         <number>1</number>
        </property>
       </widget>
      </item>
-     <item row="2" column="1" colspan="2">
+     <item row="3" column="1" colspan="2">
       <widget class="QSpinBox" name="mSpinBox">
        <property name="value">
         <number>1</number>
        </property>
       </widget>
      </item>
-     <item row="6" column="1" colspan="6">
+     <item row="7" column="1" colspan="6">
       <widget class="QgsCheckableComboBox" name="mArraysComboBox">
        <property name="toolTip">
         <string>Select statistics that output multiple values (array)</string>
@@ -206,14 +206,14 @@ subtasks</string>
        </item>
       </widget>
      </item>
-     <item row="6" column="0" alignment="Qt::AlignHCenter">
+     <item row="7" column="0" alignment="Qt::AlignHCenter">
       <widget class="QLabel" name="label_6">
        <property name="text">
         <string>Arrays</string>
        </property>
       </widget>
      </item>
-     <item row="11" column="6">
+     <item row="12" column="6">
       <widget class="QDialogButtonBox" name="mButtonBox">
        <property name="orientation">
         <enum>Qt::Horizontal</enum>
@@ -229,7 +229,7 @@ subtasks</string>
      <item row="1" column="1" colspan="6">
       <widget class="QgsMapLayerComboBox" name="mVectorLayerComboBox"/>
      </item>
-     <item row="3" column="1" colspan="6">
+     <item row="4" column="1" colspan="6">
       <widget class="QLabel" name="label_7">
        <property name="text">
         <string>Not recommended (very slow)</string>
@@ -243,7 +243,7 @@ subtasks</string>
        </property>
       </widget>
      </item>
-     <item row="3" column="0">
+     <item row="4" column="0">
       <widget class="QCheckBox" name="mVirtualCheckBox">
        <property name="layoutDirection">
         <enum>Qt::RightToLeft</enum>
@@ -259,14 +259,14 @@ subtasks</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="0" alignment="Qt::AlignHCenter">
+     <item row="5" column="0" alignment="Qt::AlignHCenter">
       <widget class="QLabel" name="label_4">
        <property name="text">
         <string>Output File Path</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="1" colspan="6">
+     <item row="5" column="1" colspan="6">
       <widget class="QgsFileWidget" name="mQgsOutputFileWidget">
        <property name="fileWidgetButtonVisible">
         <bool>true</bool>
@@ -295,14 +295,14 @@ subtasks</string>
      <item row="0" column="1" colspan="6">
       <widget class="QgsMapLayerComboBox" name="mRasterLayerComboBox"/>
      </item>
-     <item row="2" column="3">
+     <item row="3" column="3">
       <widget class="QLabel" name="label_9">
        <property name="text">
         <string>OR</string>
        </property>
       </widget>
      </item>
-     <item row="7" column="0" colspan="7" alignment="Qt::AlignVCenter">
+     <item row="8" column="0" colspan="7" alignment="Qt::AlignVCenter">
       <widget class="QProgressBar" name="mProgressBar">
        <property name="value">
         <number>0</number>
@@ -312,7 +312,7 @@ subtasks</string>
        </property>
       </widget>
      </item>
-     <item row="11" column="0" colspan="5">
+     <item row="12" column="0" colspan="5">
       <widget class="QPushButton" name="mCalculateButton">
        <property name="text">
         <string>Calculate</string>
@@ -328,7 +328,7 @@ subtasks</string>
        </property>
       </widget>
      </item>
-     <item row="9" column="0" colspan="7">
+     <item row="10" column="0" colspan="7">
       <widget class="QPlainTextEdit" name="mPlainText">
        <property name="readOnly">
         <bool>true</bool>
@@ -338,10 +338,24 @@ subtasks</string>
        </property>
       </widget>
      </item>
-     <item row="5" column="0" alignment="Qt::AlignHCenter">
+     <item row="6" column="0" alignment="Qt::AlignHCenter">
       <widget class="QLabel" name="label_5">
        <property name="text">
         <string>Aggregates</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="mPrefixEdit">
+       <property name="text">
+        <string>_</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0" alignment="Qt::AlignHCenter">
+      <widget class="QLabel" name="label_10">
+       <property name="text">
+        <string>Column prefix</string>
        </property>
       </widget>
      </item>

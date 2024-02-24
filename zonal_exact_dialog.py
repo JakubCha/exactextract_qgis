@@ -124,7 +124,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                                                      result_list=self.intermediate_result_list,
                                                     stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
                                                     index_column=self.temp_index_field, index_column_dtype=self.input_gdf[self.temp_index_field].dtype, 
-                                                    prefix='test_prefix_')
+                                                    prefix=self.dialog_input.prefix)
         self.postprocess_task.taskCompleted.connect(self.update_progress_bar)
         
         self.tasks = []
@@ -196,6 +196,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         output_file_path = self.mQgsOutputFileWidget.filePath()
         aggregates_stats_list = self.mAggregatesComboBox.checkedItems()
         arrays_stats_list = self.mArraysComboBox.checkedItems()
+        prefix = self.mPrefixEdit.text()
         
         if not raster_layer_path or not vector_layer_path:
             self.uc.bar_warn(f"You didn't select raster layer or vector layer")
@@ -209,7 +210,8 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             return
         
         self.dialog_input = DialogInputDTO(raster_layer_path=raster_layer_path, vector_layer_path=vector_layer_path, parallel_jobs=parallel_jobs, 
-                                           output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, arrays_stats_list=arrays_stats_list)
+                                           output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, arrays_stats_list=arrays_stats_list,
+                                           prefix=prefix)
     
     def get_files_paths(self):
         raster_layer_path = self.mRasterLayerComboBox.currentLayer().dataProvider().dataSourceUri()
