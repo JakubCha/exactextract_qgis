@@ -77,6 +77,11 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.mQgsOutputFileWidget.setFileWidgetButtonVisible(not self.flag_virtual)
         self.mQgsOutputFileWidget.setReadOnly(self.flag_virtual)
         self.mVirtualCheckBox.clicked.connect(self.toggle_virtual)
+        # controls whether input vector layer has index field
+        self.flag_hasindex = True
+        self.mIndexCheckBox.setChecked(not self.flag_hasindex)
+        self.mFieldComboBox.setVisible(self.flag_hasindex)
+        self.mIndexCheckBox.clicked.connect(self.toggle_index_field)
         
         self.mRasterLayerComboBox.setFilters(QgsMapLayerProxyModel.RasterLayer)
         self.mVectorLayerComboBox.setFilters(QgsMapLayerProxyModel.VectorLayer)
@@ -93,6 +98,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         try:
             self.get_input_values()
             if self.dialog_input is None:
+                self.mCalculateButton.setEnabled(True)
                 return
             # open vector layer and calculate batch size to split vectors
             if self.dialog_input.input_layername is not None:
@@ -194,6 +200,10 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         output_file_path = self.mQgsOutputFileWidget.filePath()
         aggregates_stats_list = self.mAggregatesComboBox.checkedItems()
         arrays_stats_list = self.mArraysComboBox.checkedItems()
+        if self.flag_hasindex:
+            index_field = self.mFieldComboBox.currentField()
+        else:
+            index_field = 'id'
         
         if not raster_layer_path or not vector_layer_path:
             self.uc.bar_warn(f"You didn't select raster layer or vector layer")
@@ -220,4 +230,8 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.mVirtualCheckBox.setChecked(self.flag_virtual)
         self.mQgsOutputFileWidget.setFileWidgetButtonVisible(not self.flag_virtual)
         self.mQgsOutputFileWidget.setReadOnly(self.flag_virtual)
-
+        
+    def toggle_index_field(self):
+        self.flag_hasindex = not self.flag_hasindex
+        self.mIndexCheckBox.setChecked(not self.flag_hasindex)
+        self.mFieldComboBox.setVisible(self.flag_hasindex)
