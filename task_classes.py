@@ -62,4 +62,4 @@ class PostprocessStatsTask(QgsTask):
         return True
     
     def finished(self, result):
-        self.widget_console.write_info(f'Inside Postprocess Task: {self.description}')
+        self.widget_console.write_info(f'Finished Postprocess Task: {self.description}')

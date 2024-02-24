@@ -61,6 +61,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.postprocess_task: PostprocessStatsTask = None
         self.input_gdf: gpd.GeoDataFrame = None
         self.calculated_stats_list = []
+        self.temp_index_field = None
         # assign qgis internal variables to class variables
         self.uc = uc
         self.iface = iface
@@ -77,19 +78,9 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.mQgsOutputFileWidget.setFileWidgetButtonVisible(not self.flag_virtual)
         self.mQgsOutputFileWidget.setReadOnly(self.flag_virtual)
         self.mVirtualCheckBox.clicked.connect(self.toggle_virtual)
-        # controls whether input vector layer has index field
-        self.flag_hasindex = True
-        self.mIndexCheckBox.setChecked(not self.flag_hasindex)
-        self.mFieldComboBox.setVisible(self.flag_hasindex)
-        self.mIndexCheckBox.clicked.connect(self.toggle_index_field)
         # set filters on combo boxes to get correct layer types
         self.mRasterLayerComboBox.setFilters(QgsMapLayerProxyModel.RasterLayer)
         self.mVectorLayerComboBox.setFilters(QgsMapLayerProxyModel.VectorLayer)
-        
-        if self.mVectorLayerComboBox.currentLayer() is not None:
-            self.mFieldComboBox.setLayer(self.mVectorLayerComboBox.currentLayer()) # set layer for initialization
-        # connect signal so whenever vector layer changes it updates fields
-        self.mVectorLayerComboBox.layerChanged.connect(self.mFieldComboBox.setLayer)
         
         self.mCalculateButton.clicked.connect(self.calculate)
 
@@ -102,20 +93,17 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                 return
             # open vector layer and calculate batch size to split vectors
             if self.dialog_input.input_layername is not None:
-                self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, layer=self.dialog_input.input_layername, engine='pyogrio', fid_as_index=True)
+                self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, layer=self.dialog_input.input_layername, engine='pyogrio')
             else:
-                self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, engine='pyogrio', fid_as_index=True)
+                self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, engine='pyogrio')
             
-            if self.flag_hasindex:
-                if self.dialog_input.index_field.lower() == 'fid':
-                    # it's special case due to usage of geopandas - we need to get FID as separate column
-                    self.input_gdf = self.input_gdf.reset_index().rename(columns={"index":self.dialog_input.index_field})
-                if not self.input_gdf[self.dialog_input.index_field].is_unique:
-                    raise Exception(f'{self.dialog_input.index_field} is not unique!')
-                elif self.input_gdf[self.dialog_input.index_field].dtype.kind not in 'iu':
-                    raise Exception(f'{self.dialog_input.index_field} is not integer!')
-            else:
-                self.input_gdf = self.input_gdf.reset_index().rename(columns={"index":self.dialog_input.index_field}).astype({self.dialog_input.index_field:'int32'})
+            # create a temporary index field
+            counter = 1
+            self.temp_index_field = 'temp_index'
+            while self.temp_index_field in self.input_gdf.columns:
+                self.temp_index_field = 'temp_index_{counter}'
+                counter += 1
+            self.input_gdf = self.input_gdf.reset_index().rename(columns={"index":self.temp_index_field})
             
             batch_size = round(len(self.input_gdf) / self.dialog_input.parallel_jobs)
             # calculate using QgsTask and exactextract
@@ -135,8 +123,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.postprocess_task = PostprocessStatsTask(f'Zonal ExactExtract task', QgsTask.CanCancel, widget_console=self.widget_console,
                                                      result_list=self.intermediate_result_list,
                                                     stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
-                                                    index_column=self.dialog_input.index_field, 
-                                                    index_column_dtype=self.input_gdf[self.dialog_input.index_field].dtype, 
+                                                    index_column=self.temp_index_field, index_column_dtype=self.input_gdf[self.temp_index_field].dtype, 
                                                     prefix='test_prefix_')
         self.postprocess_task.taskCompleted.connect(self.update_progress_bar)
         
@@ -148,7 +135,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                                                      widget_console=self.widget_console,
                                                      polygon_layer_gdf=temp_vector_gdf, raster=self.dialog_input.raster_layer_path,
                                                      stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
-                                                     include_cols=[self.dialog_input.index_field])
+                                                     include_cols=[self.temp_index_field])
             calculation_subtask.taskCompleted.connect(self.update_progress_bar)
             self.tasks.append(calculation_subtask)
             self.postprocess_task.addSubTask(calculation_subtask, [], QgsTask.ParentDependsOnSubTask)
@@ -162,7 +149,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.widget_console.write_info(f'Zonal ExactExtract task result shape: {str(calculated_stats_df.shape)}')
         
         try:
-            polygon_layer_stats_gdf = pd.merge(self.input_gdf, calculated_stats_df, on=self.dialog_input.index_field, how='left')
+            polygon_layer_stats_gdf = pd.merge(self.input_gdf, calculated_stats_df, on=self.temp_index_field, how='left')
             if self.flag_virtual:
                 virtual_layer = QgsVectorLayer(polygon_layer_stats_gdf.to_json(),"result_zonal_layer","memory")
                 self.project.addMapLayer(virtual_layer)
@@ -209,10 +196,6 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         output_file_path = self.mQgsOutputFileWidget.filePath()
         aggregates_stats_list = self.mAggregatesComboBox.checkedItems()
         arrays_stats_list = self.mArraysComboBox.checkedItems()
-        if self.flag_hasindex:
-            index_field = self.mFieldComboBox.currentField()
-        else:
-            index_field = 'id_temp'
         
         if not raster_layer_path or not vector_layer_path:
             self.uc.bar_warn(f"You didn't select raster layer or vector layer")
@@ -226,8 +209,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             return
         
         self.dialog_input = DialogInputDTO(raster_layer_path=raster_layer_path, vector_layer_path=vector_layer_path, parallel_jobs=parallel_jobs, 
-                                           output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, arrays_stats_list=arrays_stats_list,
-                                           index_field=index_field)
+                                           output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, arrays_stats_list=arrays_stats_list)
     
     def get_files_paths(self):
         raster_layer_path = self.mRasterLayerComboBox.currentLayer().dataProvider().dataSourceUri()
@@ -240,8 +222,4 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.mVirtualCheckBox.setChecked(self.flag_virtual)
         self.mQgsOutputFileWidget.setFileWidgetButtonVisible(not self.flag_virtual)
         self.mQgsOutputFileWidget.setReadOnly(self.flag_virtual)
-        
-    def toggle_index_field(self):
-        self.flag_hasindex = not self.flag_hasindex
-        self.mIndexCheckBox.setChecked(not self.flag_hasindex)
-        self.mFieldComboBox.setVisible(self.flag_hasindex)
+
