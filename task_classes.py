@@ -16,8 +16,8 @@ class CalculateStatsTask(QgsTask):
         self.result_list = result_list
     
     def run(self):
-        QgsMessageLog.logMessage(f'Started task: {self.description}')
-        self.widget_console.write_info(f'Started task: {self.description}')
+        QgsMessageLog.logMessage(f'Started task: {self.description} with {self.polygon_layer_gdf.shape[0]} polygons')
+        self.widget_console.write_info(f'Started task: {self.description} with {self.polygon_layer_gdf.shape[0]} polygons')
         
         result_stats = exact_extract(vec=self.polygon_layer_gdf, rast=self.raster, ops=self.stats, include_cols=self.include_cols, output="pandas")
         self.result_list.append(result_stats)
@@ -25,7 +25,7 @@ class CalculateStatsTask(QgsTask):
         return True
         
     def finished(self, result):
-        pass
+        self.widget_console.write_info(f'Finished task: {self.description}')
 
 class PostprocessStatsTask(QgsTask):
     def __init__(self, description, flags, widget_console, result_list, index_column, index_column_dtype, stats, prefix):
@@ -62,4 +62,4 @@ class PostprocessStatsTask(QgsTask):
         return True
     
     def finished(self, result):
-        pass
+        self.widget_console.write_info(f'Finished Postprocess Task: {self.description}')

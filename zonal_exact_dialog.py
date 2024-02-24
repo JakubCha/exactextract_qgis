@@ -61,6 +61,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.postprocess_task: PostprocessStatsTask = None
         self.input_gdf: gpd.GeoDataFrame = None
         self.calculated_stats_list = []
+        self.temp_index_field = None
         # assign qgis internal variables to class variables
         self.uc = uc
         self.iface = iface
@@ -77,7 +78,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.mQgsOutputFileWidget.setFileWidgetButtonVisible(not self.flag_virtual)
         self.mQgsOutputFileWidget.setReadOnly(self.flag_virtual)
         self.mVirtualCheckBox.clicked.connect(self.toggle_virtual)
-        
+        # set filters on combo boxes to get correct layer types
         self.mRasterLayerComboBox.setFilters(QgsMapLayerProxyModel.RasterLayer)
         self.mVectorLayerComboBox.setFilters(QgsMapLayerProxyModel.VectorLayer)
         
@@ -86,15 +87,23 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
     def calculate(self):
         self.mCalculateButton.setEnabled(False)
         try:
-            self.get_input_values()
+            self.get_input_values()  # loads input values from the dialog into self.dialog_input
             if self.dialog_input is None:
+                self.mCalculateButton.setEnabled(True)
                 return
             # open vector layer and calculate batch size to split vectors
             if self.dialog_input.input_layername is not None:
                 self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, layer=self.dialog_input.input_layername, engine='pyogrio')
             else:
                 self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, engine='pyogrio')
-            self.input_gdf = self.input_gdf.reset_index().rename(columns={"index":"id"}).astype({'id':'int32'})
+            
+            # create a temporary index field
+            counter = 1
+            self.temp_index_field = 'temp_index'
+            while self.temp_index_field in self.input_gdf.columns:
+                self.temp_index_field = 'temp_index_{counter}'
+                counter += 1
+            self.input_gdf = self.input_gdf.reset_index().rename(columns={"index":self.temp_index_field})
             
             batch_size = round(len(self.input_gdf) / self.dialog_input.parallel_jobs)
             # calculate using QgsTask and exactextract
@@ -105,10 +114,8 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         except Exception as exc:
             QgsMessageLog.logMessage(f'ERROR: {exc}')
             self.widget_console.write_error(exc)
+        finally:
             self.mCalculateButton.setEnabled(True)
-            
-            
-        
             
     def process_calculations(self, vector_gdf, batch_size):
         self.intermediate_result_list = []
@@ -116,7 +123,8 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.postprocess_task = PostprocessStatsTask(f'Zonal ExactExtract task', QgsTask.CanCancel, widget_console=self.widget_console,
                                                      result_list=self.intermediate_result_list,
                                                     stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
-                                                    index_column='id', index_column_dtype=self.input_gdf['id'].dtype, prefix='test_prefix_')
+                                                    index_column=self.temp_index_field, index_column_dtype=self.input_gdf[self.temp_index_field].dtype, 
+                                                    prefix=self.dialog_input.prefix)
         self.postprocess_task.taskCompleted.connect(self.update_progress_bar)
         
         self.tasks = []
@@ -127,7 +135,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                                                      widget_console=self.widget_console,
                                                      polygon_layer_gdf=temp_vector_gdf, raster=self.dialog_input.raster_layer_path,
                                                      stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
-                                                     include_cols=['id'])
+                                                     include_cols=[self.temp_index_field])
             calculation_subtask.taskCompleted.connect(self.update_progress_bar)
             self.tasks.append(calculation_subtask)
             self.postprocess_task.addSubTask(calculation_subtask, [], QgsTask.ParentDependsOnSubTask)
@@ -135,14 +143,13 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         # self.task_manager.addTask(parent_task)
         self.task_manager.addTask(self.postprocess_task)
         
-            
     def save_result(self):
         calculated_stats_df = self.postprocess_task.calculated_stats
         QgsMessageLog.logMessage(f'Zonal ExactExtract task result shape: {str(calculated_stats_df.shape)}')
         self.widget_console.write_info(f'Zonal ExactExtract task result shape: {str(calculated_stats_df.shape)}')
         
         try:
-            polygon_layer_stats_gdf = pd.merge(self.input_gdf, calculated_stats_df, on='id', how='left')
+            polygon_layer_stats_gdf = pd.merge(self.input_gdf, calculated_stats_df, on=self.temp_index_field, how='left')
             if self.flag_virtual:
                 virtual_layer = QgsVectorLayer(polygon_layer_stats_gdf.to_json(),"result_zonal_layer","memory")
                 self.project.addMapLayer(virtual_layer)
@@ -183,14 +190,13 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         
         self.mProgressBar.setValue(0)
         
-    
-    
     def get_input_values(self):
         raster_layer_path, vector_layer_path = self.get_files_paths()
         parallel_jobs = self.mSpinBox.value()
         output_file_path = self.mQgsOutputFileWidget.filePath()
         aggregates_stats_list = self.mAggregatesComboBox.checkedItems()
         arrays_stats_list = self.mArraysComboBox.checkedItems()
+        prefix = self.mPrefixEdit.text()
         
         if not raster_layer_path or not vector_layer_path:
             self.uc.bar_warn(f"You didn't select raster layer or vector layer")
@@ -203,8 +209,9 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             self.uc.bar_warn(f"You didn't select anything from either Aggregates and Arrays")
             return
         
-        self.dialog_input = DialogInputDTO(raster_layer_path, vector_layer_path, parallel_jobs, output_file_path,
-                                           aggregates_stats_list, arrays_stats_list)
+        self.dialog_input = DialogInputDTO(raster_layer_path=raster_layer_path, vector_layer_path=vector_layer_path, parallel_jobs=parallel_jobs, 
+                                           output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, arrays_stats_list=arrays_stats_list,
+                                           prefix=prefix)
     
     def get_files_paths(self):
         raster_layer_path = self.mRasterLayerComboBox.currentLayer().dataProvider().dataSourceUri()
