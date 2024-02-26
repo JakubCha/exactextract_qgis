@@ -15,8 +15,9 @@
 </p>
 
 <p align="center">
-![Image of the plugin window in QGIS](media/plugin_window.png?raw=true "Plugin Window")
-![Image of the qgis raster menu with zonal exactextract option](media/plugin_window.png?raw=true "Raster Menu")
+<img src="media/raster_menu.png" alt="Image of the qgis raster menu with zonal exactextract option" width=50%>
+<img src="media/plugin_window.png" alt="Image of the plugin window in QGIS" width=50%>
+
 </p>
 
 ## Overview
