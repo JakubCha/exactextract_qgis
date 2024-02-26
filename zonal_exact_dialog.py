@@ -101,7 +101,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             counter = 1
             self.temp_index_field = 'temp_index'
             while self.temp_index_field in self.input_gdf.columns:
-                self.temp_index_field = 'temp_index_{counter}'
+                self.temp_index_field = f'temp_index_{counter}'
                 counter += 1
             self.input_gdf = self.input_gdf.reset_index().rename(columns={"index":self.temp_index_field})
             
@@ -122,7 +122,6 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         # parent_task = ParentTask(f'parent task 1', QgsTask.CanCancel, result_list=self.intermediate_result_list)
         self.postprocess_task = PostprocessStatsTask(f'Zonal ExactExtract task', QgsTask.CanCancel, widget_console=self.widget_console,
                                                      result_list=self.intermediate_result_list,
-                                                    stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
                                                     index_column=self.temp_index_field, index_column_dtype=self.input_gdf[self.temp_index_field].dtype, 
                                                     prefix=self.dialog_input.prefix)
         self.postprocess_task.taskCompleted.connect(self.update_progress_bar)

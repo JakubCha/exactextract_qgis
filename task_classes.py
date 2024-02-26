@@ -28,14 +28,13 @@ class CalculateStatsTask(QgsTask):
         self.widget_console.write_info(f'Finished task: {self.description}')
 
 class PostprocessStatsTask(QgsTask):
-    def __init__(self, description, flags, widget_console, result_list, index_column, index_column_dtype, stats, prefix):
+    def __init__(self, description, flags, widget_console, result_list, index_column, index_column_dtype, prefix):
         super().__init__(description, flags)
         self.description = description
         self.widget_console = widget_console
         self.result_list = result_list
         self.index_column = index_column
         self.index_column_dtype = index_column_dtype
-        self.stats = stats
         self.prefix = prefix
         
         self.calculated_stats = None
@@ -54,7 +53,7 @@ class PostprocessStatsTask(QgsTask):
         
         if len(self.prefix) > 0:
             # rename columns to include prefix string
-            rename_dict = {stat: f"{self.prefix}_{stat}" for stat in self.stats}
+            rename_dict = {column: f"{self.prefix}_{column}" for column in calculated_stats.columns if column != self.index_column}
             calculated_stats = calculated_stats.rename(columns=rename_dict)
         
         self.calculated_stats = calculated_stats
