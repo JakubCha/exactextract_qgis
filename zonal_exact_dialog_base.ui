@@ -355,7 +355,8 @@ subtasks</string>
      <item row="2" column="0" alignment="Qt::AlignHCenter">
       <widget class="QLabel" name="label_10">
        <property name="text">
-        <string>Column prefix</string>
+        <string>Output statistics
+ column prefix</string>
        </property>
       </widget>
      </item>
