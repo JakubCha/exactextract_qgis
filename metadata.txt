@@ -10,10 +10,11 @@ version=0.2
 author=Jakub Charyton
 email=jakub.charyton@gmail.com
 
-about=Zonal Statistics using ExactExtract library. This plugin requires pandas, geopandas and exactextract libraries installed in python.
+about=Zonal Statistics using ExactExtract library. This plugin requires pandas, geopandas and exactextract libraries installed in python. 
+    You can read more about plugin and installation requirements in plugin repository / homepage.
 
 
-tracker=https://github.com/JakubCha/exactextract_qgis
+tracker=https://github.com/JakubCha/exactextract_qgis/issues
 repository=https://github.com/JakubCha/exactextract_qgis
 # End of mandatory metadata
 
