@@ -53,7 +53,7 @@ In current version of the plugin there are 4 packages required:
   - geopandas
   - pandas
 - Installed through OSGeo4W shell python pip:
-  - <a href="https://pypi.org/project/pyogrio/">pyogrio</a>
+  - <a href="https://pypi.org/project/pyogrio/">pyogrio</a>: ``pip install pyogrio``
 - Needs to be compile and installed manually from GitHub repository (``exactextract`` library author will upload it to *conda-forge* once API is stable):
   - compile <a href="https://github.com/isciences/exactextract/tree/master/python">exactextract</a> and then ``pip install`` wheel
   
