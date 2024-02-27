@@ -25,6 +25,7 @@ This is a repository for the QGIS plugin that allows to aggregate/summarize valu
 
 "Zonal statistics" tool in QGIS currently have an issues (<a href="https://github.com/qgis/QGIS/issues/52223">1</a>, <a href="https://github.com/qgis/QGIS/issues/38273">2</a>) that yield wrong results in certain situations.
 
+### Features
 - **Multiple supported statistics** Every statistic given by ``exactextract`` is supported by plugin (<a href="https://github.com/isciences/exactextract?tab=readme-ov-file#supported-statistics">statistics</a>), including array result type (usage of these statistics might slow down calculation and saving stage).
 - **Usage of QGIS parallel engine** There is an option to process statistics calculation in multiple parts (subtasks/batch option). Calculation of statistics in this case is done in parallel manner using ``QgsTaskManager`` engine.
 - **Support for multiband rasters** In case there's a multiband raster - each band is processed during calculations and is output as separate set of columns.
@@ -32,15 +33,16 @@ This is a repository for the QGIS plugin that allows to aggregate/summarize valu
 ### Features to be added
 - Support for weighting raster;
 - Move all heavy operations to QGIS ``QgsTask``;
-- Support for more output formats (including geoparquet);
+- Support for more output formats (including ``geoparquet``);
+- Support layer choice in case of file formats with many layers (e.g. ``geopackage``);
 - Remove necessity to use geopandas - requires the addition of QGIS vectors and rasters handling capabilities to ``exactextract`` python API.
 
 ## Current version
 It's **beta** version of the plugin. It  is not recommended for production usage yet! 
 
-It will be considered **stable** when:
-- unit and integration tests are added;
+It will be out of **beta** when:
 - ``exactextract`` python package is released on PyPi;
+- unit and integration tests are added;
 - features are considered  completed;
 - documentation is provided with the plugin;
 
@@ -52,6 +54,6 @@ In current version of the plugin there are 4 packages required:
   - pandas
 - Installed through OSGeo4W shell python pip:
   - <a href="https://pypi.org/project/pyogrio/">pyogrio</a>
-- Needs to be  installed manually from GitHub repository (library author will upload to *conda-forge* once API is stable):
-  - <a href="https://github.com/isciences/exactextract/tree/master/python">exactextract</a>
+- Needs to be compile and installed manually from GitHub repository (``exactextract`` library author will upload it to *conda-forge* once API is stable):
+  - compile <a href="https://github.com/isciences/exactextract/tree/master/python">exactextract</a> and then ``pip install`` wheel
   
