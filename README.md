@@ -54,6 +54,6 @@ In current version of the plugin there are 4 packages required:
   - pandas
 - Installed through OSGeo4W shell python pip:
   - <a href="https://pypi.org/project/pyogrio/">pyogrio</a>: ``pip install pyogrio``
-- Needs to be compile and installed manually from GitHub repository (``exactextract`` library author will upload it to *conda-forge* once API is stable):
-  - compile <a href="https://github.com/isciences/exactextract/tree/master/python">exactextract</a> and then ``pip install`` wheel
+- You may use <a href="https://github.com/JakubCha/exactextract_qgis/tree/main/requirements">wheel</a> delivered in this repository (tested with QGIS versions 3.34 and 3.36) or you can compile and install it manually from GitHub repository (``exactextract`` library author will upload it to *conda-forge* once API is stable):
+  - <a href="https://github.com/isciences/exactextract/tree/master/python">exactextract</a>: ``pip install`` wheel (.whl) file
   
