@@ -49,7 +49,7 @@ It will be out of **beta** when:
 ## Installation
 
 In current version of the plugin there are 4 packages required:
-- Installed through OSGeo4W setup utility (or `pip install gepandas`):
+- Installed through OSGeo4W setup utility (or `pip install geopandas`):
   - geopandas (used to read vector data in format compatible with current version of `exactextract`)
   - pandas
 - Installed through OSGeo4W shell python pip (``pip install pyogrio``):
