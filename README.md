@@ -49,11 +49,11 @@ It will be out of **beta** when:
 ## Installation
 
 In current version of the plugin there are 4 packages required:
-- Installed through OSGeo4W setup utility:
-  - geopandas
+- Installed through OSGeo4W setup utility (or `pip install pandas`):
+  - geopandas (used to read vector data in format compatible with current version of `exactextract`)
   - pandas
-- Installed through OSGeo4W shell python pip:
-  - <a href="https://pypi.org/project/pyogrio/">pyogrio</a>: ``pip install pyogrio``
-- You may use <a href="https://github.com/JakubCha/exactextract_qgis/tree/main/requirements">wheel</a> delivered in this repository (tested with QGIS versions 3.34 and 3.36) or you can compile and install it manually from GitHub repository (``exactextract`` library author will upload it to *conda-forge* once API is stable):
-  - <a href="https://github.com/isciences/exactextract/tree/master/python">exactextract</a>: ``pip install`` wheel (.whl) file
+- Installed through OSGeo4W shell python pip (``pip install pyogrio``):
+  - <a href="https://pypi.org/project/pyogrio/">pyogrio</a> (used to speed up read of vector data with geopandas)
+- You may use <a href="https://github.com/JakubCha/exactextract_qgis/tree/main/requirements">wheel</a> delivered in this repository (tested with QGIS versions 3.34 and 3.36) or you can compile and install it manually from GitHub repository (``exactextract`` library author will upload it to *conda-forge* once API is stable) and then ``pip install`` wheel (.whl) file:
+  - <a href="https://github.com/isciences/exactextract/tree/master/python">exactextract</a> (zonal statistics computation engine)
   
