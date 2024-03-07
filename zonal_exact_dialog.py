@@ -30,7 +30,7 @@ from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtCore import QVariant
 from qgis.core import (QgsMapLayerProxyModel, QgsTask, QgsApplication, QgsTaskManager, QgsMessageLog, QgsVectorLayer, QgsField,
-                    QgsExpressionContext, QgsExpression, QgsExpressionContextUtils, edit)
+                    edit, QgsFeatureRequest)
 
 import geopandas as gpd
 import pandas as pd
@@ -64,6 +64,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.input_gdf: gpd.GeoDataFrame = None
         self.calculated_stats_list = []
         self.temp_index_field = None
+        self.features_count = None
         # assign qgis internal variables to class variables
         self.uc = uc
         self.iface = iface
@@ -93,14 +94,14 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             if self.dialog_input is None:
                 self.mCalculateButton.setEnabled(True)
                 return
-            self.input_vector = self.dialog_input.vector_layer
+            self.input_vector: QgsVectorLayer = self.dialog_input.vector_layer
             
-            #TODO: add option to choose id from the layer instead of creating temporary every time
             # create a temporary index field
             self.temp_index_field = 'temp_index'
-            self.generate_temporary_id(self.input_vector, self.temp_index_field)
+            self.generate_temporary_id(self.temp_index_field)
             
-            batch_size = round(self.input_vector.featureCount() / self.dialog_input.parallel_jobs)
+            self.features_count = self.input_vector.featureCount()
+            batch_size = round(self.features_count / self.dialog_input.parallel_jobs)
             # calculate using QgsTask and exactextract
             self.process_calculations(self.input_vector, batch_size)
             # wait for calculations to finish to continue
@@ -116,17 +117,18 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.intermediate_result_list = []
         self.postprocess_task = PostprocessStatsTask(f'Zonal ExactExtract task', QgsTask.CanCancel, widget_console=self.widget_console,
                                                     result_list=self.intermediate_result_list,
-                                                    index_column=self.temp_index_field, index_column_dtype=self.input_gdf[self.temp_index_field].dtype, 
-                                                    prefix=self.dialog_input.prefix)
+                                                    index_column=self.temp_index_field, prefix=self.dialog_input.prefix)
         self.postprocess_task.taskCompleted.connect(self.update_progress_bar)
         
         self.tasks = []
-        for i in range(0, self.input_gdf.shape[0], batch_size):
-            temp_vector_gdf = vector_gdf[i:i + batch_size]
-
+        for i in range(0, self.features_count, batch_size):
+            selection_ids = list(range(i, i + batch_size))
+            self.input_vector.selectByIds(selection_ids)
+            temp_vector = self.input_vector.materialize(QgsFeatureRequest().setFilterFids(self.input_vector.selectedFeatureIds()))
+            
             calculation_subtask = CalculateStatsTask(f'calculation subtask {i}', flags=QgsTask.Silent, result_list=self.intermediate_result_list,
                                                     widget_console=self.widget_console,
-                                                    polygon_layer_gdf=temp_vector_gdf, raster=self.dialog_input.raster_layer_path,
+                                                    polygon_layer=temp_vector, raster=self.dialog_input.raster_layer_path,
                                                     stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
                                                     include_cols=[self.temp_index_field])
             calculation_subtask.taskCompleted.connect(self.update_progress_bar)
@@ -206,24 +208,44 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                                         output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, arrays_stats_list=arrays_stats_list,
                                         prefix=prefix)
     
-    def generate_temporary_id(self, layer: QgsVectorLayer, field_name: str = 'temp_index'):
+    def generate_temporary_id(self, field_name: str = 'temp_index'):
         # Add a new field for the unique IDs
-        field_index = layer.fields().indexFromName(field_name)
+        field_index = self.input_vector.fields().indexFromName(field_name)
         
         if field_index == -1:
             # Add a new field if it doesn't exist
-            layer.dataProvider().addAttributes([QgsField(field_name, QVariant.Int)])
-            layer.updateFields()
-        
+            self.input_vector.dataProvider().addAttributes([QgsField(field_name, QVariant.Int)])
+            self.input_vector.updateFields()
+            self.input_vector.commitChanges()
+            
         # Generate unique IDs and update the attribute table
-        with edit(layer):
-            for feature in layer.getFeatures():
-                layer.changeAttributeValue(feature.id(), field_index, feature.id())
-        layer.commitChanges()
+        with edit(self.input_vector):
+            for feature in self.input_vector.getFeatures():
+                self.input_vector.changeAttributeValue(feature.id(), field_index, feature.id())
+        self.input_vector.commitChanges()
                     
     def toggle_virtual(self):
         self.flag_virtual = not self.flag_virtual
         self.mVirtualCheckBox.setChecked(self.flag_virtual)
         self.mQgsOutputFileWidget.setFileWidgetButtonVisible(not self.flag_virtual)
         self.mQgsOutputFileWidget.setReadOnly(self.flag_virtual)
+        
+    # def run(self):
+    #     QgsMessageLog.logMessage(f'Inside Postprocess Task: {self.description}')
+    #     self.widget_console.write_info(f'Inside Postprocess Task: {self.description}')
+        
+    #     # result_indexed_list = [df.set_index(self.index_column) for df in self.result_list]
+    #     calculated_stats = pd.concat(self.result_list)
+        
+    #     if self.index_column is not None and self.index_column_dtype is not None:
+    #         # change index dtype to dtype of index column in input layer
+    #         index_dtype = str(self.index_column_dtype)
+    #         calculated_stats = calculated_stats.astype({self.index_column:index_dtype})
+        
+    #     if len(self.prefix) > 0:
+    #         # rename columns to include prefix string
+    #         rename_dict = {column: f"{self.prefix}_{column}" for column in calculated_stats.columns if column != self.index_column}
+    #         calculated_stats = calculated_stats.rename(columns=rename_dict)
+        
+    #     self.calculated_stats = calculated_stats
 
