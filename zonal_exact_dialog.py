@@ -29,8 +29,8 @@ from pathlib import Path
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtCore import QVariant
-from qgis.core import (QgsMapLayerProxyModel, QgsTask, QgsApplication, QgsTaskManager, QgsMessageLog, QgsVectorLayer, QgsField,
-                    edit, QgsFeatureRequest)
+from qgis.core import (QgsMapLayerProxyModel, QgsFieldProxyModel, QgsTask, QgsApplication, QgsTaskManager, QgsMessageLog, QgsVectorLayer, 
+                    QgsField, edit, QgsFeatureRequest)
 
 import geopandas as gpd
 import pandas as pd
@@ -83,10 +83,27 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.mVirtualCheckBox.clicked.connect(self.toggle_virtual)
         # set filters on combo boxes to get correct layer types
         self.mRasterLayerComboBox.setFilters(QgsMapLayerProxyModel.RasterLayer)
-        self.mVectorLayerComboBox.setFilters(QgsMapLayerProxyModel.VectorLayer)
+        self.mVectorLayerComboBox.setFilters(QgsMapLayerProxyModel.PolygonLayer)
+        # set ID field combo box to current vector layer
+        self.mFieldComboBox.setFilters(QgsFieldProxyModel.LongLong | QgsFieldProxyModel.Int)
+        if self.mVectorLayerComboBox.currentLayer():
+            self.mFieldComboBox.setLayer(self.mVectorLayerComboBox.currentLayer())
+        self.mVectorLayerComboBox.layerChanged.connect(self.set_field_vector_layer)
+        # set temp_index_field class variable when user selects another index field
+        if self.mFieldComboBox.currentField():
+            self.temp_index_field = self.mFieldComboBox.currentField()
+        self.mFieldComboBox.fieldChanged.connect(self.set_id_field)
         
         self.mCalculateButton.clicked.connect(self.calculate)
 
+    def set_field_vector_layer(self):
+        selectedLayer = self.mVectorLayerComboBox.currentLayer()
+        if selectedLayer:
+            self.mFieldComboBox.setLayer(selectedLayer)
+    
+    def set_id_field(self):
+        self.temp_index_field = self.mFieldComboBox.currentField()
+    
     def calculate(self):
         self.mCalculateButton.setEnabled(False)
         try:
@@ -95,10 +112,6 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.mCalculateButton.setEnabled(True)
                 return
             self.input_vector: QgsVectorLayer = self.dialog_input.vector_layer
-            
-            # create a temporary index field
-            self.temp_index_field = 'temp_index'
-            self.generate_temporary_id(self.temp_index_field)
             
             self.features_count = self.input_vector.featureCount()
             batch_size = round(self.features_count / self.dialog_input.parallel_jobs)
@@ -141,6 +154,8 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         calculated_stats_df = self.postprocess_task.calculated_stats
         QgsMessageLog.logMessage(f'Zonal ExactExtract task result shape: {str(calculated_stats_df.shape)}')
         self.widget_console.write_info(f'Zonal ExactExtract task result shape: {str(calculated_stats_df.shape)}')
+        
+        
         
         try:
             polygon_layer_stats_gdf = pd.merge(self.input_gdf, calculated_stats_df, on=self.temp_index_field, how='left')
@@ -192,10 +207,18 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         aggregates_stats_list: List[str] = self.mAggregatesComboBox.checkedItems()
         arrays_stats_list: List[str] = self.mArraysComboBox.checkedItems()
         prefix: str = self.mPrefixEdit.text()
-        
+        # check if both raster and vector layers are set
         if not raster_layer_path or not vector_layer:
             self.uc.bar_warn(f"You didn't select raster layer or vector layer")
             return
+        # check if ID field is set
+        if not self.temp_index_field:
+            self.uc.bar_warn(f"You didn't select ID field")
+            return
+        # check if ID field is unique
+        # TODO: Checking uniqueness would require a looping over all features  in the vector layer, which can be slow
+        # therefore it is omitted for now until we have a better solution
+        # We might add a checkbox to let user decide wether we should check uniqueness (with given information that it might be slow operation)
         if not self.flag_virtual and not output_file_path:
             self.uc.bar_warn(f"You didn't select output file path")
             return
@@ -207,22 +230,6 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.dialog_input = DialogInputDTO(raster_layer_path=raster_layer_path, vector_layer=vector_layer, parallel_jobs=parallel_jobs, 
                                         output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, arrays_stats_list=arrays_stats_list,
                                         prefix=prefix)
-    
-    def generate_temporary_id(self, field_name: str = 'temp_index'):
-        # Add a new field for the unique IDs
-        field_index = self.input_vector.fields().indexFromName(field_name)
-        
-        if field_index == -1:
-            # Add a new field if it doesn't exist
-            self.input_vector.dataProvider().addAttributes([QgsField(field_name, QVariant.Int)])
-            self.input_vector.updateFields()
-            self.input_vector.commitChanges()
-            
-        # Generate unique IDs and update the attribute table
-        with edit(self.input_vector):
-            for feature in self.input_vector.getFeatures():
-                self.input_vector.changeAttributeValue(feature.id(), field_index, feature.id())
-        self.input_vector.commitChanges()
                     
     def toggle_virtual(self):
         self.flag_virtual = not self.flag_virtual
