@@ -27,7 +27,7 @@ class CalculateStatsTask(QgsTask):
     def finished(self, result):
         self.widget_console.write_info(f'Finished task: {self.description}')
 
-class PostprocessStatsTask(QgsTask):
+class MergeStatsTask(QgsTask):
     def __init__(self, description, flags, widget_console, result_list, index_column, prefix):
         super().__init__(description, flags)
         self.description = description
@@ -39,8 +39,8 @@ class PostprocessStatsTask(QgsTask):
         self.calculated_stats = None
         
     def run(self):
-        QgsMessageLog.logMessage(f'Inside Postprocess Task: {self.description}')
-        self.widget_console.write_info(f'Inside Postprocess Task: {self.description}')
+        QgsMessageLog.logMessage(f'Inside MergeStatsTask Task: {self.description}')
+        self.widget_console.write_info(f'Inside MergeStatsTask Task: {self.description}')
         
         # result_indexed_list = [df.set_index(self.index_column) for df in self.result_list]
         calculated_stats = pd.concat(self.result_list)
@@ -55,4 +55,4 @@ class PostprocessStatsTask(QgsTask):
         return True
     
     def finished(self, result):
-        self.widget_console.write_info(f'Finished Postprocess Task: {self.description}, {result}')
+        self.widget_console.write_info(f'Finished MergeStatsTask Task: {self.description}, {result}')

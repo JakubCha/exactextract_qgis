@@ -37,7 +37,7 @@ import pandas as pd
 
 from .dialog_input_dto import DialogInputDTO
 from .user_communication import UserCommunication, WidgetPlainTextWriter
-from .task_classes import CalculateStatsTask, PostprocessStatsTask
+from .task_classes import CalculateStatsTask, MergeStatsTask
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -60,7 +60,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         # Initiate an empty list to store intermediate results of zonal statistics calculation
         self.intermediate_result_list = []
         # Initiate main task that will hold aggregated data from child calculating tasks
-        self.postprocess_task: PostprocessStatsTask = None
+        self.merge_task: MergeStatsTask = None
         self.input_gdf: gpd.GeoDataFrame = None
         self.calculated_stats_list = []
         self.temp_index_field = None
@@ -116,8 +116,8 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             self.process_calculations(self.input_vector, batch_size)
             
             # wait for calculations to finish to continue
-            if self.postprocess_task is not None:
-                self.postprocess_task.taskCompleted.connect(self.save_result)
+            if self.merge_task is not None:
+                self.merge_task.taskCompleted.connect(self.postprocess)
         except Exception as exc:
             QgsMessageLog.logMessage(f'ERROR: {exc}')
             self.widget_console.write_error(exc)
@@ -126,10 +126,10 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             
     def process_calculations(self, vector_gdf, batch_size):
         self.intermediate_result_list = []
-        self.postprocess_task = PostprocessStatsTask(f'Zonal ExactExtract task', QgsTask.CanCancel, widget_console=self.widget_console,
+        self.merge_task = MergeStatsTask(f'Zonal ExactExtract task', QgsTask.CanCancel, widget_console=self.widget_console,
                                                     result_list=self.intermediate_result_list,
                                                     index_column=self.temp_index_field, prefix=self.dialog_input.prefix)
-        self.postprocess_task.taskCompleted.connect(self.update_progress_bar)
+        self.merge_task.taskCompleted.connect(self.update_progress_bar)
         
         self.tasks = []
         for i in range(0, self.features_count, batch_size):
@@ -144,13 +144,13 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                                                     include_cols=[self.temp_index_field])
             calculation_subtask.taskCompleted.connect(self.update_progress_bar)
             self.tasks.append(calculation_subtask)
-            self.postprocess_task.addSubTask(calculation_subtask, [], QgsTask.ParentDependsOnSubTask)
+            self.merge_task.addSubTask(calculation_subtask, [], QgsTask.ParentDependsOnSubTask)
 
-        self.task_manager.addTask(self.postprocess_task)
+        self.task_manager.addTask(self.merge_task)
         
-    def save_result(self):
+    def postprocess(self):
         try:
-            calculated_stats = self.postprocess_task.calculated_stats
+            calculated_stats = self.merge_task.calculated_stats
             QgsMessageLog.logMessage(f'Zonal ExactExtract task result shape: {str(calculated_stats.shape)}')
             self.widget_console.write_info(f'Zonal ExactExtract task result shape: {str(calculated_stats.shape)}')
             
@@ -188,7 +188,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.dialog_input: DialogInputDTO = None
         self.tasks = []
         self.intermediate_result_list = []
-        self.postprocess_task: PostprocessStatsTask = None
+        self.merge_task: MergeStatsTask = None
         self.input_gdf: gpd.GeoDataFrame = None
         self.calculated_stats_list = []
         
