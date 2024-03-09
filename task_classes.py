@@ -47,7 +47,7 @@ class PostprocessStatsTask(QgsTask):
 
         if len(self.prefix) > 0:
             # rename columns to include prefix string
-            rename_dict = {column: f"{self.prefix}_{column}" for column in calculated_stats.columns if column != self.index_column}
+            rename_dict = {column: f"{self.prefix}{column}" for column in calculated_stats.columns if column != self.index_column}
             calculated_stats = calculated_stats.rename(columns=rename_dict)
         
         self.calculated_stats = calculated_stats

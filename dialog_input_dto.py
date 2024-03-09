@@ -9,7 +9,7 @@ class DialogInputDTO:
     raster_layer_path: str
     vector_layer: QgsVectorLayer
     parallel_jobs: int
-    output_file_path: str
+    output_file_path: Path
     aggregates_stats_list: List[str]
     arrays_stats_list: List[str]
     prefix: str
