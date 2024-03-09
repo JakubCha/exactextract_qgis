@@ -29,10 +29,9 @@ from pathlib import Path
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
 from qgis.PyQt.QtCore import QVariant
-from qgis.core import (QgsMapLayerProxyModel, QgsFieldProxyModel, QgsTask, QgsApplication, QgsTaskManager, QgsMessageLog, QgsVectorLayer, 
-                    QgsField, edit, QgsFeatureRequest)
+from qgis.core import (QgsMapLayerProxyModel, QgsFieldProxyModel, QgsTask, QgsTaskManager, QgsMessageLog, QgsVectorLayer, 
+                    QgsFeatureRequest, QgsVectorLayerJoinInfo)
 
-import geopandas as gpd
 import pandas as pd
 
 from .dialog_input_dto import DialogInputDTO
@@ -61,7 +60,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.intermediate_result_list = []
         # Initiate main task that will hold aggregated data from child calculating tasks
         self.merge_task: MergeStatsTask = None
-        self.input_gdf: gpd.GeoDataFrame = None
+        self.output_attribute_layer = None
         self.calculated_stats_list = []
         self.temp_index_field = None
         self.features_count = None
@@ -161,16 +160,19 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                 calculated_stats.to_parquet(self.dialog_input.output_file_path, index=False)
             
             # load output into QGIS
-            output_project_layer = QgsVectorLayer(str(self.dialog_input.output_file_path), Path(self.dialog_input.output_file_path).stem, 'ogr')
+            output_attribute_layer = QgsVectorLayer(str(self.dialog_input.output_file_path), Path(self.dialog_input.output_file_path).stem, 'ogr')
             # Check if the layer was loaded successfully
-            if not output_project_layer.isValid():
+            if not output_attribute_layer.isValid():
                 QgsMessageLog.logMessage(f'Unable to load layer from {self.dialog_input.output_file_path}')
                 self.widget_console.write_error(f'Unable to load layer from {self.dialog_input.output_file_path}')
             else:
                 self.widget_console.write_info('Finished calculating statistics')
                 # Add the layer to the project
-                self.project.addMapLayer(output_project_layer)
-                    
+                self.project.addMapLayer(output_attribute_layer)
+                self.output_attribute_layer = output_attribute_layer
+                # TODO: it should be executed based on checkbox selected by user
+                self.create_join()
+            
         except Exception as exc:
             QgsMessageLog.logMessage(f'ERROR: {exc}')
             self.widget_console.write_error(exc)
@@ -178,6 +180,17 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             self.clean()
             self.mCalculateButton.setEnabled(True)
 
+    def create_join(self):
+        joinObject = QgsVectorLayerJoinInfo()
+        joinObject.setJoinLayer(self.output_attribute_layer)
+        joinObject.setJoinFieldName(self.temp_index_field)
+        joinObject.setTargetFieldName(self.temp_index_field)
+        joinObject.setUsingMemoryCache(True)
+        if not self.input_vector.addJoin(joinObject):
+            QgsMessageLog.logMessage("Can't join output to input layer")
+            self.widget_console.write_error("Can't join output to input layer")
+            
+    
     def update_progress_bar(self):
         # calculate progress change as percentage of total tasks completed + parent task
         progress_change = int((1 / (len(self.tasks) + 1)) * 100)
@@ -189,7 +202,6 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.tasks = []
         self.intermediate_result_list = []
         self.merge_task: MergeStatsTask = None
-        self.input_gdf: gpd.GeoDataFrame = None
         self.calculated_stats_list = []
         
         self.mProgressBar.setValue(0)
