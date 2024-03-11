@@ -90,14 +90,6 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.mQgsOutputFileWidget.setFilter("Documents (*.csv *.parquet)")
         
         self.mCalculateButton.clicked.connect(self.calculate)
-
-    def set_field_vector_layer(self):
-        selectedLayer = self.mVectorLayerComboBox.currentLayer()
-        if selectedLayer:
-            self.mFieldComboBox.setLayer(selectedLayer)
-    
-    def set_id_field(self):
-        self.temp_index_field = self.mFieldComboBox.currentField()
     
     def calculate(self):
         self.mCalculateButton.setEnabled(False)
@@ -241,3 +233,12 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.dialog_input = DialogInputDTO(raster_layer_path=raster_layer_path, vector_layer=vector_layer, parallel_jobs=parallel_jobs, 
                                         output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, arrays_stats_list=arrays_stats_list,
                                         prefix=prefix)
+
+    def set_field_vector_layer(self):
+        selectedLayer = self.mVectorLayerComboBox.currentLayer()
+        if selectedLayer:
+            self.mFieldComboBox.setLayer(selectedLayer)
+    
+    def set_id_field(self):
+        self.temp_index_field = self.mFieldComboBox.currentField()
+        
