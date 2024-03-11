@@ -42,7 +42,6 @@ class MergeStatsTask(QgsTask):
         QgsMessageLog.logMessage(f'Inside MergeStatsTask Task: {self.description}')
         self.widget_console.write_info(f'Inside MergeStatsTask Task: {self.description}')
         
-        # result_indexed_list = [df.set_index(self.index_column) for df in self.result_list]
         calculated_stats = pd.concat(self.result_list)
 
         if len(self.prefix) > 0:

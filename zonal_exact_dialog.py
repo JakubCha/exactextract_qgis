@@ -184,8 +184,9 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                 # Add the layer to the project
                 self.project.addMapLayer(output_attribute_layer)
                 self.output_attribute_layer = output_attribute_layer
-                # TODO: it should be executed based on checkbox selected by user
-                self.create_join()
+                
+                if self.mJoinCheckBox.isChecked():
+                    self.create_join()
             
         except Exception as exc:
             QgsMessageLog.logMessage(f'ERROR: {exc}')
