@@ -92,6 +92,12 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.mCalculateButton.clicked.connect(self.calculate)
     
     def calculate(self):
+        """
+        The calculate method disables the calculate button, gets input values from the dialog 
+        and stores them in the dialog_input attribute, and initiates the calculation process 
+        using QgsTask and exactextract. If an exception occurs during the calculation, 
+        an error message is logged and displayed in the console.
+        """
         self.mCalculateButton.setEnabled(False)
         try:
             self.get_input_values()  # loads input values from the dialog into self.dialog_input
@@ -113,9 +119,20 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             QgsMessageLog.logMessage(f'ERROR: {exc}')
             self.widget_console.write_error(exc)
         finally:
+            self.input_vector.removeSelection()  # remove selection of features after processing
             self.mCalculateButton.setEnabled(True)
             
-    def process_calculations(self, vector_gdf, batch_size):
+    def process_calculations(self, vector: QgsVectorLayer, batch_size: int):
+        """
+        Processes the calculations for zonal statistics using exactextract.
+        This method initiates a series of tasks to calculate zonal statistics for a given vector layer
+        using exactextract. It creates a `CalculateStatsTask` for each batch of features and adds it
+        as a subtask to a `MergeStatsTask`.
+
+        Args:
+            vector (QgsVectorLayer): The input vector layer for which to calculate zonal statistics.
+            batch_size (int): The number of features to process in each batch.
+        """
         self.intermediate_result_list = []
         self.merge_task = MergeStatsTask(f'Zonal ExactExtract task', QgsTask.CanCancel, widget_console=self.widget_console,
                                                     result_list=self.intermediate_result_list,
@@ -125,8 +142,8 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.tasks = []
         for i in range(0, self.features_count, batch_size):
             selection_ids = list(range(i, i + batch_size))
-            self.input_vector.selectByIds(selection_ids)
-            temp_vector = self.input_vector.materialize(QgsFeatureRequest().setFilterFids(self.input_vector.selectedFeatureIds()))
+            vector.selectByIds(selection_ids)
+            temp_vector = vector.materialize(QgsFeatureRequest().setFilterFids(self.input_vector.selectedFeatureIds()))
             
             calculation_subtask = CalculateStatsTask(f'calculation subtask {i}', flags=QgsTask.Silent, result_list=self.intermediate_result_list,
                                                     widget_console=self.widget_console,
@@ -140,6 +157,11 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.task_manager.addTask(self.merge_task)
         
     def postprocess(self):
+        """
+        This method is called after the zonal statistics calculation is complete. It saves the result 
+        to a file based on the user's selected file format, loads the output into QGIS, and joins the 
+        output to the input vector layer if necessary.
+        """
         try:
             calculated_stats = self.merge_task.calculated_stats
             QgsMessageLog.logMessage(f'Zonal ExactExtract task result shape: {str(calculated_stats.shape)}')
@@ -153,7 +175,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             
             # load output into QGIS
             output_attribute_layer = QgsVectorLayer(str(self.dialog_input.output_file_path), Path(self.dialog_input.output_file_path).stem, 'ogr')
-            # Check if the layer was loaded successfully
+            # check if the layer was loaded successfully
             if not output_attribute_layer.isValid():
                 QgsMessageLog.logMessage(f'Unable to load layer from {self.dialog_input.output_file_path}')
                 self.widget_console.write_error(f'Unable to load layer from {self.dialog_input.output_file_path}')
@@ -173,6 +195,10 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             self.mCalculateButton.setEnabled(True)
 
     def create_join(self):
+        """
+        This method creates a join between the output attribute layer and the input vector layer based on a 
+        common index field. It is called after the output attribute layer has been loaded into QGIS.
+        """
         joinObject = QgsVectorLayerJoinInfo()
         joinObject.setJoinLayer(self.output_attribute_layer)
         joinObject.setJoinFieldName(self.temp_index_field)
@@ -182,14 +208,17 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             QgsMessageLog.logMessage("Can't join output to input layer")
             self.widget_console.write_error("Can't join output to input layer")
             
-    
     def update_progress_bar(self):
-        # calculate progress change as percentage of total tasks completed + parent task
+        """
+        Calculate progress change as percentage of total tasks completed + parent task
+        """
         progress_change = int((1 / (len(self.tasks) + 1)) * 100)
         self.mProgressBar.setValue(self.mProgressBar.value() + progress_change)
         
     def clean(self):
-        # reinitialize object values to free memory after calculation is done
+        """
+        Reinitialize object values to free memory after calculation is done
+        """
         self.dialog_input: DialogInputDTO = None
         self.tasks = []
         self.intermediate_result_list = []
@@ -199,6 +228,9 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.mProgressBar.setValue(0)
         
     def get_input_values(self):
+        """
+        Gets input values from dialog and puts it into `DialogInputDTO` class object.
+        """
         raster_layer_path: str = self.mRasterLayerComboBox.currentLayer().dataProvider().dataSourceUri()
         vector_layer: QgsVectorLayer = self.mVectorLayerComboBox.currentLayer()
         parallel_jobs: int = self.mSpinBox.value()
@@ -235,10 +267,16 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                                         prefix=prefix)
 
     def set_field_vector_layer(self):
+        """
+        Sets fields to the Field ComboBox if vector layer has changed
+        """
         selectedLayer = self.mVectorLayerComboBox.currentLayer()
         if selectedLayer:
             self.mFieldComboBox.setLayer(selectedLayer)
     
     def set_id_field(self):
+        """
+        Sets index method variable 
+        """
         self.temp_index_field = self.mFieldComboBox.currentField()
         
