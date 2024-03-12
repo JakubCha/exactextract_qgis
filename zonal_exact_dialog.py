@@ -258,6 +258,13 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         if output_file_path.suffix != ".csv" and output_file_path.suffix != '.parquet':
             self.uc.bar_warn(f"Allowed output formats are CSV (.csv) or Parquet (.parquet)")
             return
+        else:
+            if output_file_path.suffix == '.parquet':
+                try:
+                    import fastparquet
+                except ImportError:
+                    self.uc.bar_warn(f"Parquet output format is supported only if fastparquet library is installed")
+                    return
         # check if both stats lists are empty
         if not aggregates_stats_list and not arrays_stats_list:
             self.uc.bar_warn(f"You didn't select anything from either Aggregates and Arrays")
