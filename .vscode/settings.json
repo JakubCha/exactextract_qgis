@@ -9,7 +9,7 @@
     ],
     "terminal.integrated.env.windows": {
         "PYTHONPATH": "E:\\OSGeo4W\\apps\\Python39",
-        "PATH": "E:\\OSGeo4W\\apps\\qgis\\bin;E:\\OSGeo4W\\apps\\Python39;E:\\OSGeo4W\\apps\\Python39\\Scripts;E:\\OSGeo4W\\apps\\qt5\\bin;E:\\OSGeo4W\\bin;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\system32\\WBem;E:\\OSGeo4W\\apps\\Python39\\lib\\site-packages\\pywin32_system32;E:\\OSGeo4W\\apps\\Python39\\lib\\site-packages\\numpy\\.libs",
+        "PATH": "${env:PATH};E:\\OSGeo4W\\apps\\qgis\\bin;E:\\OSGeo4W\\apps\\Python39;E:\\OSGeo4W\\apps\\Python39\\Scripts;E:\\OSGeo4W\\apps\\qt5\\bin;E:\\OSGeo4W\\bin;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\system32\\WBem;E:\\OSGeo4W\\apps\\Python39\\lib\\site-packages\\pywin32_system32;E:\\OSGeo4W\\apps\\Python39\\lib\\site-packages\\numpy\\.libs",
         "GDAL_DATA": "E:\\OSGeo4W\\share\\gdal",
         "GDAL_DRIVER_PATH": "E:\\OSGeo4W\\bin\\gdalplugins",
         "GDAL_FILENAME_IS_UTF8": "YES",

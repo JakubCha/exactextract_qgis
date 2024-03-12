@@ -28,14 +28,15 @@ from pathlib import Path
 
 from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets
-from qgis.core import QgsMapLayerProxyModel, QgsTask, QgsApplication, QgsTaskManager, QgsMessageLog, QgsVectorLayer
+from qgis.PyQt.QtCore import QVariant
+from qgis.core import (QgsMapLayerProxyModel, QgsFieldProxyModel, QgsTask, QgsTaskManager, QgsMessageLog, QgsVectorLayer, 
+                    QgsFeatureRequest, QgsVectorLayerJoinInfo)
 
-import geopandas as gpd
 import pandas as pd
 
 from .dialog_input_dto import DialogInputDTO
 from .user_communication import UserCommunication, WidgetPlainTextWriter
-from .task_classes import CalculateStatsTask, PostprocessStatsTask
+from .task_classes import CalculateStatsTask, MergeStatsTask
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
@@ -58,10 +59,11 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         # Initiate an empty list to store intermediate results of zonal statistics calculation
         self.intermediate_result_list = []
         # Initiate main task that will hold aggregated data from child calculating tasks
-        self.postprocess_task: PostprocessStatsTask = None
-        self.input_gdf: gpd.GeoDataFrame = None
+        self.merge_task: MergeStatsTask = None
+        self.output_attribute_layer = None
         self.calculated_stats_list = []
         self.temp_index_field = None
+        self.features_count = None
         # assign qgis internal variables to class variables
         self.uc = uc
         self.iface = iface
@@ -72,100 +74,120 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         
         self.widget_console = WidgetPlainTextWriter(self.mPlainText)
         
-        # controls whether output file is virtual or saved on disk
-        self.flag_virtual = False
-        self.mVirtualCheckBox.setChecked(self.flag_virtual)
-        self.mQgsOutputFileWidget.setFileWidgetButtonVisible(not self.flag_virtual)
-        self.mQgsOutputFileWidget.setReadOnly(self.flag_virtual)
-        self.mVirtualCheckBox.clicked.connect(self.toggle_virtual)
         # set filters on combo boxes to get correct layer types
         self.mRasterLayerComboBox.setFilters(QgsMapLayerProxyModel.RasterLayer)
-        self.mVectorLayerComboBox.setFilters(QgsMapLayerProxyModel.VectorLayer)
+        self.mVectorLayerComboBox.setFilters(QgsMapLayerProxyModel.PolygonLayer)
+        # set ID field combo box to current vector layer
+        self.mFieldComboBox.setFilters(QgsFieldProxyModel.LongLong | QgsFieldProxyModel.Int)
+        if self.mVectorLayerComboBox.currentLayer():
+            self.mFieldComboBox.setLayer(self.mVectorLayerComboBox.currentLayer())
+        self.mVectorLayerComboBox.layerChanged.connect(self.set_field_vector_layer)
+        # set temp_index_field class variable when user selects another index field
+        if self.mFieldComboBox.currentField():
+            self.temp_index_field = self.mFieldComboBox.currentField()
+        self.mFieldComboBox.fieldChanged.connect(self.set_id_field)
+        # set output file allowed extensions
+        self.mQgsOutputFileWidget.setFilter("Documents (*.csv *.parquet)")
         
         self.mCalculateButton.clicked.connect(self.calculate)
-
+    
     def calculate(self):
+        """
+        The calculate method disables the calculate button, gets input values from the dialog 
+        and stores them in the dialog_input attribute, and initiates the calculation process 
+        using QgsTask and exactextract. If an exception occurs during the calculation, 
+        an error message is logged and displayed in the console.
+        """
         self.mCalculateButton.setEnabled(False)
         try:
             self.get_input_values()  # loads input values from the dialog into self.dialog_input
             if self.dialog_input is None:
                 self.mCalculateButton.setEnabled(True)
                 return
-            # open vector layer and calculate batch size to split vectors
-            if self.dialog_input.input_layername is not None:
-                self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, layer=self.dialog_input.input_layername, engine='pyogrio')
-            else:
-                self.input_gdf = gpd.read_file(self.dialog_input.vector_layer_path, engine='pyogrio')
+            self.input_vector: QgsVectorLayer = self.dialog_input.vector_layer
             
-            # create a temporary index field
-            counter = 1
-            self.temp_index_field = 'temp_index'
-            while self.temp_index_field in self.input_gdf.columns:
-                self.temp_index_field = f'temp_index_{counter}'
-                counter += 1
-            self.input_gdf = self.input_gdf.reset_index().rename(columns={"index":self.temp_index_field})
+            self.features_count = self.input_vector.featureCount()
+            batch_size = round(self.features_count / self.dialog_input.parallel_jobs)
             
-            batch_size = round(len(self.input_gdf) / self.dialog_input.parallel_jobs)
             # calculate using QgsTask and exactextract
-            self.process_calculations(self.input_gdf, batch_size)
+            self.process_calculations(self.input_vector, batch_size)
+            
             # wait for calculations to finish to continue
-            if self.postprocess_task is not None:
-                self.postprocess_task.taskCompleted.connect(self.save_result)
+            if self.merge_task is not None:
+                self.merge_task.taskCompleted.connect(self.postprocess)
         except Exception as exc:
             QgsMessageLog.logMessage(f'ERROR: {exc}')
             self.widget_console.write_error(exc)
         finally:
+            self.input_vector.removeSelection()  # remove selection of features after processing
             self.mCalculateButton.setEnabled(True)
             
-    def process_calculations(self, vector_gdf, batch_size):
+    def process_calculations(self, vector: QgsVectorLayer, batch_size: int):
+        """
+        Processes the calculations for zonal statistics using exactextract.
+        This method initiates a series of tasks to calculate zonal statistics for a given vector layer
+        using exactextract. It creates a `CalculateStatsTask` for each batch of features and adds it
+        as a subtask to a `MergeStatsTask`.
+
+        Args:
+            vector (QgsVectorLayer): The input vector layer for which to calculate zonal statistics.
+            batch_size (int): The number of features to process in each batch.
+        """
         self.intermediate_result_list = []
-        # parent_task = ParentTask(f'parent task 1', QgsTask.CanCancel, result_list=self.intermediate_result_list)
-        self.postprocess_task = PostprocessStatsTask(f'Zonal ExactExtract task', QgsTask.CanCancel, widget_console=self.widget_console,
-                                                     result_list=self.intermediate_result_list,
-                                                    index_column=self.temp_index_field, index_column_dtype=self.input_gdf[self.temp_index_field].dtype, 
-                                                    prefix=self.dialog_input.prefix)
-        self.postprocess_task.taskCompleted.connect(self.update_progress_bar)
+        self.merge_task = MergeStatsTask(f'Zonal ExactExtract task', QgsTask.CanCancel, widget_console=self.widget_console,
+                                                    result_list=self.intermediate_result_list,
+                                                    index_column=self.temp_index_field, prefix=self.dialog_input.prefix)
+        self.merge_task.taskCompleted.connect(self.update_progress_bar)
         
         self.tasks = []
-        for i in range(0, self.input_gdf.shape[0], batch_size):
-            temp_vector_gdf = vector_gdf[i:i + batch_size]
-
+        for i in range(0, self.features_count, batch_size):
+            selection_ids = list(range(i, i + batch_size))
+            vector.selectByIds(selection_ids)
+            temp_vector = vector.materialize(QgsFeatureRequest().setFilterFids(self.input_vector.selectedFeatureIds()))
+            
             calculation_subtask = CalculateStatsTask(f'calculation subtask {i}', flags=QgsTask.Silent, result_list=self.intermediate_result_list,
-                                                     widget_console=self.widget_console,
-                                                     polygon_layer_gdf=temp_vector_gdf, raster=self.dialog_input.raster_layer_path,
-                                                     stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
-                                                     include_cols=[self.temp_index_field])
+                                                    widget_console=self.widget_console,
+                                                    polygon_layer=temp_vector, raster=self.dialog_input.raster_layer_path,
+                                                    stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
+                                                    include_cols=[self.temp_index_field])
             calculation_subtask.taskCompleted.connect(self.update_progress_bar)
             self.tasks.append(calculation_subtask)
-            self.postprocess_task.addSubTask(calculation_subtask, [], QgsTask.ParentDependsOnSubTask)
+            self.merge_task.addSubTask(calculation_subtask, [], QgsTask.ParentDependsOnSubTask)
 
-        # self.task_manager.addTask(parent_task)
-        self.task_manager.addTask(self.postprocess_task)
+        self.task_manager.addTask(self.merge_task)
         
-    def save_result(self):
-        calculated_stats_df = self.postprocess_task.calculated_stats
-        QgsMessageLog.logMessage(f'Zonal ExactExtract task result shape: {str(calculated_stats_df.shape)}')
-        self.widget_console.write_info(f'Zonal ExactExtract task result shape: {str(calculated_stats_df.shape)}')
-        
+    def postprocess(self):
+        """
+        This method is called after the zonal statistics calculation is complete. It saves the result 
+        to a file based on the user's selected file format, loads the output into QGIS, and joins the 
+        output to the input vector layer if necessary.
+        """
         try:
-            polygon_layer_stats_gdf = pd.merge(self.input_gdf, calculated_stats_df, on=self.temp_index_field, how='left')
-            if self.flag_virtual:
-                virtual_layer = QgsVectorLayer(polygon_layer_stats_gdf.to_json(),"result_zonal_layer","memory")
-                self.project.addMapLayer(virtual_layer)
+            calculated_stats = self.merge_task.calculated_stats
+            QgsMessageLog.logMessage(f'Zonal ExactExtract task result shape: {str(calculated_stats.shape)}')
+            self.widget_console.write_info(f'Zonal ExactExtract task result shape: {str(calculated_stats.shape)}')
+            
+            # save result based on user decided extension
+            if self.dialog_input.output_file_path.suffix == '.csv':
+                calculated_stats.to_csv(self.dialog_input.output_file_path, index=False)
+            elif self.dialog_input.output_file_path.suffix == '.parquet':
+                calculated_stats.to_parquet(self.dialog_input.output_file_path, index=False)
+            
+            # load output into QGIS
+            output_attribute_layer = QgsVectorLayer(str(self.dialog_input.output_file_path), Path(self.dialog_input.output_file_path).stem, 'ogr')
+            # check if the layer was loaded successfully
+            if not output_attribute_layer.isValid():
+                QgsMessageLog.logMessage(f'Unable to load layer from {self.dialog_input.output_file_path}')
+                self.widget_console.write_error(f'Unable to load layer from {self.dialog_input.output_file_path}')
             else:
-                polygon_layer_stats_gdf.to_file(self.dialog_input.output_file_path, engine='pyogrio')
-                # Create a QgsVectorLayer instance for the GeoPackage
-                output_project_layer = QgsVectorLayer(self.dialog_input.output_file_path, Path(self.dialog_input.output_file_path).stem, 'ogr')
-
-                # Check if the layer was loaded successfully
-                if not output_project_layer.isValid():
-                    QgsMessageLog.logMessage(f'Unable to load layer from {self.dialog_input.output_file_path}')
-                    self.widget_console.write_error(f'Unable to load layer from {self.dialog_input.output_file_path}')
-                else:
-                    self.widget_console.write_info('Finished calculating statistics')
-                    # Add the layer to the project
-                    self.project.addMapLayer(output_project_layer)
-                    
+                self.widget_console.write_info('Finished calculating statistics')
+                # Add the layer to the project
+                self.project.addMapLayer(output_attribute_layer)
+                self.output_attribute_layer = output_attribute_layer
+                
+                if self.mJoinCheckBox.isChecked():
+                    self.create_join()
+            
         except Exception as exc:
             QgsMessageLog.logMessage(f'ERROR: {exc}')
             self.widget_console.write_error(exc)
@@ -173,54 +195,96 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             self.clean()
             self.mCalculateButton.setEnabled(True)
 
+    def create_join(self):
+        """
+        This method creates a join between the output attribute layer and the input vector layer based on a 
+        common index field. It is called after the output attribute layer has been loaded into QGIS.
+        """
+        joinObject = QgsVectorLayerJoinInfo()
+        joinObject.setJoinLayer(self.output_attribute_layer)
+        joinObject.setJoinFieldName(self.temp_index_field)
+        joinObject.setTargetFieldName(self.temp_index_field)
+        joinObject.setUsingMemoryCache(True)
+        if not self.input_vector.addJoin(joinObject):
+            QgsMessageLog.logMessage("Can't join output to input layer")
+            self.widget_console.write_error("Can't join output to input layer")
+            
     def update_progress_bar(self):
-        # calculate progress change as percentage of total tasks completed + parent task
+        """
+        Calculate progress change as percentage of total tasks completed + parent task
+        """
         progress_change = int((1 / (len(self.tasks) + 1)) * 100)
         self.mProgressBar.setValue(self.mProgressBar.value() + progress_change)
         
     def clean(self):
-        # reinitialize object values to free memory after calculation is done
+        """
+        Reinitialize object values to free memory after calculation is done
+        """
         self.dialog_input: DialogInputDTO = None
         self.tasks = []
         self.intermediate_result_list = []
-        self.postprocess_task: PostprocessStatsTask = None
-        self.input_gdf: gpd.GeoDataFrame = None
+        self.merge_task: MergeStatsTask = None
         self.calculated_stats_list = []
         
         self.mProgressBar.setValue(0)
         
     def get_input_values(self):
-        raster_layer_path, vector_layer_path = self.get_files_paths()
-        parallel_jobs = self.mSpinBox.value()
-        output_file_path = self.mQgsOutputFileWidget.filePath()
-        aggregates_stats_list = self.mAggregatesComboBox.checkedItems()
-        arrays_stats_list = self.mArraysComboBox.checkedItems()
-        prefix = self.mPrefixEdit.text()
-        
-        if not raster_layer_path or not vector_layer_path:
+        """
+        Gets input values from dialog and puts it into `DialogInputDTO` class object.
+        """
+        raster_layer_path: str = self.mRasterLayerComboBox.currentLayer().dataProvider().dataSourceUri()
+        vector_layer: QgsVectorLayer = self.mVectorLayerComboBox.currentLayer()
+        parallel_jobs: int = self.mSpinBox.value()
+        output_file_path: Path = Path(self.mQgsOutputFileWidget.filePath())
+        aggregates_stats_list: List[str] = self.mAggregatesComboBox.checkedItems()
+        arrays_stats_list: List[str] = self.mArraysComboBox.checkedItems()
+        prefix: str = self.mPrefixEdit.text()
+        # check if both raster and vector layers are set
+        if not raster_layer_path or not vector_layer:
             self.uc.bar_warn(f"You didn't select raster layer or vector layer")
             return
-        if not self.flag_virtual and not output_file_path:
+        # check if ID field is set
+        if not self.temp_index_field:
+            self.uc.bar_warn(f"You didn't select ID field")
+            return
+        # check if ID field is unique
+        # TODO: Checking uniqueness would require a looping over all features in the vector layer, which is slow and may take a lot of time
+        # depending on size of the input dataset therefore it is omitted for now until we have a better solution
+        # We might add a checkbox to let user decide wether we should check uniqueness (with given information that it might be slow operation)
+        if not output_file_path:
             self.uc.bar_warn(f"You didn't select output file path")
             return
+        # check if output file extension is CSV or Parquet
+        if output_file_path.suffix != ".csv" and output_file_path.suffix != '.parquet':
+            self.uc.bar_warn(f"Allowed output formats are CSV (.csv) or Parquet (.parquet)")
+            return
+        else:
+            if output_file_path.suffix == '.parquet':
+                try:
+                    import fastparquet
+                except ImportError:
+                    self.uc.bar_warn(f"Parquet output format is supported only if fastparquet library is installed")
+                    return
         # check if both stats lists are empty
         if not aggregates_stats_list and not arrays_stats_list:
             self.uc.bar_warn(f"You didn't select anything from either Aggregates and Arrays")
             return
         
-        self.dialog_input = DialogInputDTO(raster_layer_path=raster_layer_path, vector_layer_path=vector_layer_path, parallel_jobs=parallel_jobs, 
-                                           output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, arrays_stats_list=arrays_stats_list,
-                                           prefix=prefix)
-    
-    def get_files_paths(self):
-        raster_layer_path = self.mRasterLayerComboBox.currentLayer().dataProvider().dataSourceUri()
-        vector_layer_path = self.mVectorLayerComboBox.currentLayer().dataProvider().dataSourceUri()
+        self.dialog_input = DialogInputDTO(raster_layer_path=raster_layer_path, vector_layer=vector_layer, parallel_jobs=parallel_jobs, 
+                                        output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, arrays_stats_list=arrays_stats_list,
+                                        prefix=prefix)
 
-        return raster_layer_path, vector_layer_path        
+    def set_field_vector_layer(self):
+        """
+        Sets fields to the Field ComboBox if vector layer has changed
+        """
+        selectedLayer = self.mVectorLayerComboBox.currentLayer()
+        if selectedLayer:
+            self.mFieldComboBox.setLayer(selectedLayer)
     
-    def toggle_virtual(self):
-        self.flag_virtual = not self.flag_virtual
-        self.mVirtualCheckBox.setChecked(self.flag_virtual)
-        self.mQgsOutputFileWidget.setFileWidgetButtonVisible(not self.flag_virtual)
-        self.mQgsOutputFileWidget.setReadOnly(self.flag_virtual)
-
+    def set_id_field(self):
+        """
+        Sets index method variable 
+        """
+        self.temp_index_field = self.mFieldComboBox.currentField()
+        

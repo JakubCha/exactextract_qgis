@@ -1,2 +1,12 @@
-# import qgis libs so that ve set the correct sip api version
-import qgis   # pylint: disable=W0611  # NOQA
+import os
+import time
+import timeit
+
+import psycopg2
+import pytest
+from PyQt5.QtCore import QSettings
+from qgis.core import (QgsProject, QgsApplication, QgsVectorLayer, QgsDataSourceUri, QgsRelation, QgsRelationManager)
+
+# noinspection PyArgumentList
+QGIS_INSTANCE = QgsProject.instance()
+

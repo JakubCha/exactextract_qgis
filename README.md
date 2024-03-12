@@ -27,21 +27,25 @@ This is a repository for the QGIS plugin that allows to aggregate/summarize valu
 
 ### Features
 - **Multiple supported statistics** Every statistic given by ``exactextract`` is supported by plugin (<a href="https://github.com/isciences/exactextract?tab=readme-ov-file#supported-statistics">statistics</a>), including array result type (usage of these statistics might slow down calculation and saving stage).
-- **Usage of QGIS parallel engine** There is an option to process statistics calculation in multiple parts (subtasks/batch option). Calculation of statistics in this case is done in parallel manner using ``QgsTaskManager`` engine.
+- **Usage of QGIS parallel engine** There is an option to process statistics calculation in multiple parts (subtasks/batch option). Calculation of statistics in this case is done in parallel manner using ``QgsTaskManager`` engine. To configure number of parallel cores it will use you should configure `Max Threads` option in QGIS settings.
 - **Support for multiband rasters** In case there's a multiband raster - each band is processed during calculations and is output as separate set of columns.
 
 ### Features to be added
 - Support for weighting raster;
 - Move all heavy operations to QGIS ``QgsTask``;
-- Support for more output formats (including ``geoparquet``);
-- Support layer choice in case of file formats with many layers (e.g. ``geopackage``);
-- Remove necessity to use geopandas - requires the addition of QGIS vectors and rasters handling capabilities to ``exactextract`` python API.
+- Ability to output geospatial layer instead of CSV/Parquet only - It might be difficult due to lack of performant way to join `GeoDataFrame` to `QgsVectorLayer`;
+
+#### Input
+- Polygon layer (anything that is read by QGIS)
+- Raster layer (it has to be locally accessible layer. Database raster layers do not work for now)
+
+#### Output
+- Attribute layer - CSV format is supported by default and Parquet format is supported if `fastparquet` library is installed.
 
 ## Current version
 It's **beta** version of the plugin. It  is not recommended for production usage yet! 
 
 It will be out of **beta** when:
-- ``exactextract`` python package is released on PyPi;
 - unit and integration tests are added;
 - features are considered  completed;
 - documentation is provided with the plugin;
@@ -49,11 +53,8 @@ It will be out of **beta** when:
 ## Installation
 
 In current version of the plugin there are 4 packages required:
-- Installed through OSGeo4W setup utility (or `pip install geopandas`):
-  - geopandas (used to read vector data in format compatible with current version of `exactextract`)
+- [**REQUIRED**] Installed through OSGeo4W setup utility (or `pip install pandas`):
   - pandas
-- Installed through OSGeo4W shell python pip (``pip install pyogrio``):
-  - <a href="https://pypi.org/project/pyogrio/">pyogrio</a> (used to speed up read of vector data with geopandas)
-- You may use <a href="https://github.com/JakubCha/exactextract_qgis/tree/main/requirements">wheel</a> delivered in this repository (tested with QGIS versions 3.34 and 3.36) or you can compile and install it manually from GitHub repository (``exactextract`` library author will upload it to *conda-forge* once API is stable) and then ``pip install`` wheel (.whl) file:
+- [**REQUIRED**] You may use <a href="https://github.com/JakubCha/exactextract_qgis/tree/main/requirements">wheel</a> delivered in this repository (tested with QGIS versions 3.34 and 3.36) or you can compile and install it manually from GitHub repository (``exactextract`` library author is working on uploading it to PyPi) and then ``pip install`` wheel (.whl) file:
   - <a href="https://github.com/isciences/exactextract/tree/master/python">exactextract</a> (zonal statistics computation engine)
-  
+- [**OPTIONAL**] It's advised to install `fastparquet` (`pip install fastparquet`) to allow saving  results as a parquet file format;
