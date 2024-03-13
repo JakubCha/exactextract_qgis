@@ -1,25 +1,29 @@
+from typing import List
 from exactextract import exact_extract
 import pandas as pd
 
 from qgis.core import QgsTask, QgsMessageLog, QgsVectorLayer
+from .user_communication import WidgetPlainTextWriter
 
 class CalculateStatsTask(QgsTask):
-    def __init__(self, description, flags, widget_console, result_list, polygon_layer, raster, stats, include_cols):
+    def __init__(self, description, flags, widget_console, result_list, polygon_layer, raster, weights, stats, include_cols):
         super().__init__(description, flags)
-        self.description = description
-        self.widget_console = widget_console
+        self.description: str = description
+        self.widget_console: WidgetPlainTextWriter = widget_console
         self.polygon_layer: QgsVectorLayer = polygon_layer
-        self.raster = raster
-        self.stats = stats
-        self.include_cols = include_cols
+        self.raster: str = raster
+        self.weights: str = weights
+        self.stats: List[str] = stats
+        self.include_cols: List[str] = include_cols
         
-        self.result_list = result_list
+        self.result_list: List[pd.DataFrame] = result_list
     
     def run(self):
         QgsMessageLog.logMessage(f'Started task: {self.description} with {self.polygon_layer.featureCount()} polygons')
         self.widget_console.write_info(f'Started task: {self.description} with {self.polygon_layer.featureCount()} polygons')
         
-        result_stats = exact_extract(vec=self.polygon_layer, rast=self.raster, ops=self.stats, include_cols=self.include_cols, output="pandas")
+        result_stats = exact_extract(vec=self.polygon_layer, rast=self.raster, weights=self.weights, ops=self.stats, 
+                                    include_cols=self.include_cols, output="pandas")
         self.result_list.append(result_stats)
         
         return True
@@ -30,13 +34,13 @@ class CalculateStatsTask(QgsTask):
 class MergeStatsTask(QgsTask):
     def __init__(self, description, flags, widget_console, result_list, index_column, prefix):
         super().__init__(description, flags)
-        self.description = description
-        self.widget_console = widget_console
-        self.result_list = result_list
-        self.index_column = index_column
-        self.prefix = prefix
+        self.description: str = description
+        self.widget_console: WidgetPlainTextWriter = widget_console
+        self.result_list: List[pd.DataFrame] = result_list
+        self.index_column: str = index_column
+        self.prefix: str = prefix
         
-        self.calculated_stats = None
+        self.calculated_stats: pd.DataFrame = None
         
     def run(self):
         QgsMessageLog.logMessage(f'Inside MergeStatsTask Task: {self.description}')

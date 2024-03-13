@@ -7,6 +7,7 @@ from qgis.core import QgsVectorLayer
 @dataclass
 class DialogInputDTO:
     raster_layer_path: str
+    weights_layer_path: str
     vector_layer: QgsVectorLayer
     parallel_jobs: int
     output_file_path: Path

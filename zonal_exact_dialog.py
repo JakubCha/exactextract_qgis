@@ -88,6 +88,9 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.mFieldComboBox.fieldChanged.connect(self.set_id_field)
         # set output file allowed extensions
         self.mQgsOutputFileWidget.setFilter("Documents (*.csv *.parquet)")
+        # make weights layer empty as default
+        self.mWeightsLayerComboBox.setCurrentIndex(0)
+        self.mWeightsLayerComboBox.setFilters(QgsMapLayerProxyModel.RasterLayer)
         
         self.mCalculateButton.clicked.connect(self.calculate)
     
@@ -146,7 +149,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             temp_vector = vector.materialize(QgsFeatureRequest().setFilterFids(self.input_vector.selectedFeatureIds()))
             
             calculation_subtask = CalculateStatsTask(f'calculation subtask {i}', flags=QgsTask.Silent, result_list=self.intermediate_result_list,
-                                                    widget_console=self.widget_console,
+                                                    widget_console=self.widget_console, weights=self.dialog_input.weights_layer_path,
                                                     polygon_layer=temp_vector, raster=self.dialog_input.raster_layer_path,
                                                     stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
                                                     include_cols=[self.temp_index_field])
@@ -233,6 +236,9 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         Gets input values from dialog and puts it into `DialogInputDTO` class object.
         """
         raster_layer_path: str = self.mRasterLayerComboBox.currentLayer().dataProvider().dataSourceUri()
+        weights_layer_path: str = None
+        if self.mWeightsLayerComboBox.currentLayer():
+            weights_layer_path = self.mWeightsLayerComboBox.currentLayer().dataProvider().dataSourceUri()
         vector_layer: QgsVectorLayer = self.mVectorLayerComboBox.currentLayer()
         parallel_jobs: int = self.mSpinBox.value()
         output_file_path: Path = Path(self.mQgsOutputFileWidget.filePath())
@@ -270,7 +276,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             self.uc.bar_warn(f"You didn't select anything from either Aggregates and Arrays")
             return
         
-        self.dialog_input = DialogInputDTO(raster_layer_path=raster_layer_path, vector_layer=vector_layer, parallel_jobs=parallel_jobs, 
+        self.dialog_input = DialogInputDTO(raster_layer_path=raster_layer_path, weights_layer_path=weights_layer_path, vector_layer=vector_layer, parallel_jobs=parallel_jobs, 
                                         output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, arrays_stats_list=arrays_stats_list,
                                         prefix=prefix)
 
