@@ -31,9 +31,8 @@ This is a repository for the QGIS plugin that allows to aggregate/summarize valu
 - **Support for multiband rasters** In case there's a multiband raster - each band is processed during calculations and is output as separate set of columns.
 
 ### Features to be added
-- Support for weighting raster;
 - Move all heavy operations to QGIS ``QgsTask``;
-- Ability to output geospatial layer instead of CSV/Parquet only - It might be difficult due to lack of performant way to join `GeoDataFrame` to `QgsVectorLayer`;
+- Option to output geospatial layer instead of CSV/Parquet only - It might be difficult due to lack of performant way to join `GeoDataFrame` to `QgsVectorLayer`;
 
 #### Input
 - Polygon layer (anything that is read by QGIS)
