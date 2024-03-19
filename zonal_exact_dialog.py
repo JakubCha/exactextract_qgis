@@ -145,10 +145,11 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             vector.selectByIds(selection_ids)
             temp_vector = vector.materialize(QgsFeatureRequest().setFilterFids(self.input_vector.selectedFeatureIds()))
             
+            stats_list = self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list+self.dialog_input.custom_functions_list
             calculation_subtask = CalculateStatsTask(f'calculation subtask {i}', flags=QgsTask.Silent, result_list=self.intermediate_result_list,
                                                     widget_console=self.widget_console,
                                                     polygon_layer=temp_vector, raster=self.dialog_input.raster_layer_path,
-                                                    stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
+                                                    stats=stats_list,
                                                     include_cols=[self.temp_index_field])
             calculation_subtask.taskCompleted.connect(self.update_progress_bar)
             self.tasks.append(calculation_subtask)
@@ -270,9 +271,11 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             self.uc.bar_warn(f"You didn't select anything from either Aggregates and Arrays")
             return
         
+        temp_custom_functions = {"np_mean": "np.average(values, weights=cov)", "np_max": "np.max(values)"}
+        
         self.dialog_input = DialogInputDTO(raster_layer_path=raster_layer_path, vector_layer=vector_layer, parallel_jobs=parallel_jobs, 
                                         output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, arrays_stats_list=arrays_stats_list,
-                                        prefix=prefix)
+                                        prefix=prefix, custom_functions_str_dict=temp_custom_functions)
 
     def set_field_vector_layer(self):
         """

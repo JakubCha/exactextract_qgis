@@ -182,7 +182,67 @@ subtasks</string>
        </property>
       </widget>
      </item>
-     <item row="6" column="1" colspan="8">
+     <item row="7" column="1" colspan="8">
+      <widget class="QgsCheckableComboBox" name="mArraysComboBox">
+       <property name="toolTip">
+        <string>Select statistics that output multiple values (array)</string>
+       </property>
+       <item>
+        <property name="text">
+         <string>cell_id</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>center_x</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>center_y</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>coverage</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>values</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>weights</string>
+        </property>
+       </item>
+      </widget>
+     </item>
+     <item row="4" column="1" colspan="4">
+      <widget class="QSpinBox" name="mSpinBox">
+       <property name="value">
+        <number>1</number>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1" colspan="3">
+      <widget class="QLineEdit" name="mPrefixEdit">
+       <property name="text">
+        <string/>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1" colspan="3">
+      <widget class="QgsFieldComboBox" name="mFieldComboBox"/>
+     </item>
+     <item row="1" column="1" colspan="8">
+      <widget class="QgsMapLayerComboBox" name="mVectorLayerComboBox"/>
+     </item>
+     <item row="0" column="1" colspan="8">
+      <widget class="QgsMapLayerComboBox" name="mRasterLayerComboBox"/>
+     </item>
+     <item row="6" column="1" colspan="7">
       <widget class="QgsCheckableComboBox" name="mAggregatesComboBox">
        <property name="acceptDrops">
         <bool>false</bool>
@@ -303,65 +363,12 @@ subtasks</string>
        </item>
       </widget>
      </item>
-     <item row="7" column="1" colspan="8">
-      <widget class="QgsCheckableComboBox" name="mArraysComboBox">
-       <property name="toolTip">
-        <string>Select statistics that output multiple values (array)</string>
-       </property>
-       <item>
-        <property name="text">
-         <string>cell_id</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>center_x</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>center_y</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>coverage</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>values</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>weights</string>
-        </property>
-       </item>
-      </widget>
-     </item>
-     <item row="4" column="1" colspan="4">
-      <widget class="QSpinBox" name="mSpinBox">
-       <property name="value">
-        <number>1</number>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1" colspan="3">
-      <widget class="QLineEdit" name="mPrefixEdit">
+     <item row="6" column="8">
+      <widget class="QPushButton" name="pushButton">
        <property name="text">
-        <string/>
+        <string>Add Custom Metric</string>
        </property>
       </widget>
-     </item>
-     <item row="2" column="1" colspan="3">
-      <widget class="QgsFieldComboBox" name="mFieldComboBox"/>
-     </item>
-     <item row="1" column="1" colspan="8">
-      <widget class="QgsMapLayerComboBox" name="mVectorLayerComboBox"/>
-     </item>
-     <item row="0" column="1" colspan="8">
-      <widget class="QgsMapLayerComboBox" name="mRasterLayerComboBox"/>
      </item>
     </layout>
    </item>
