@@ -14,7 +14,7 @@ class DialogInputDTO:
     output_file_path: Path
     aggregates_stats_list: List[str]
     arrays_stats_list: List[str]
-    custom_functions_str_dict: Dict[str, str]  # before conversion to function - function name: function code in str
+    custom_functions_str_list: List[str]  # before conversion to function - function name: function code in str
     prefix: str
     input_layername: str = None
     output_layername: str = None
@@ -24,16 +24,26 @@ class DialogInputDTO:
         self.convert_custom_functions()
     
     def convert_custom_functions(self):
-        # for loop: convert custom_functions_str_dict to custom_functions_list using eval
+        """
+        This method converts a list of custom function strings into a list of callable custom functions. 
+        It uses a helper function to extract the function name and another helper function to create 
+        the custom function.
+        """
+        # Extract the function name from the custom function string
+        def extract_function_name(custom_function_str: str):
+            lines = custom_function_str.splitlines()
+            for line in lines:
+                if line.strip().startswith("def "):
+                    return line.split()[1].split("(")[0]
+
         # Define a helper function to create custom functions. 
         # It's defined outside loop to workaround pythons' late binding
-        def create_custom_function(function_str):
-            def custom_temp_function(values, cov):
-                return eval(function_str)
-            return custom_temp_function
-        
-        for function_name, function_str in self.custom_functions_str_dict.items():
+        def create_custom_function(function_str: str):
+            namespace = {}
+            exec(function_str, namespace)
+            return namespace[extract_function_name(function_str)]
+
+        for function_str in self.custom_functions_str_list:
             custom_function = create_custom_function(function_str)
-            custom_function.__name__ = function_name  # exactextract uses function name as stat name if it's Callable
             self.custom_functions_list.append(custom_function)
     

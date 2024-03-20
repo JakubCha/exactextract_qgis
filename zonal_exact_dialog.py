@@ -271,11 +271,23 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             self.uc.bar_warn(f"You didn't select anything from either Aggregates and Arrays")
             return
         
-        temp_custom_functions = {"np_mean": "np.average(values, weights=cov)", "np_max": "np.max(values)"}
+        temp_custom_functions = [ 
+"""
+import numpy as np
+def np_mean(values, cov):
+    average_value=np.average(values, weights=cov)
+    average_value=average_value+100
+    return average_value
+""",
+"""
+import numpy as np
+def np_max(values, cov):
+    return np.max(values)
+"""]
         
         self.dialog_input = DialogInputDTO(raster_layer_path=raster_layer_path, vector_layer=vector_layer, parallel_jobs=parallel_jobs, 
                                         output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, arrays_stats_list=arrays_stats_list,
-                                        prefix=prefix, custom_functions_str_dict=temp_custom_functions)
+                                        prefix=prefix, custom_functions_str_list=temp_custom_functions)
 
     def set_field_vector_layer(self):
         """
