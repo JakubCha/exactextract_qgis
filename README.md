@@ -26,9 +26,22 @@ This is a repository for the QGIS plugin that allows to aggregate/summarize valu
 "Zonal statistics" tool in QGIS currently have an issues (<a href="https://github.com/qgis/QGIS/issues/52223">1</a>, <a href="https://github.com/qgis/QGIS/issues/38273">2</a>) that yield wrong results in certain situations.
 
 ### Features
-- **Multiple supported statistics** Every statistic given by ``exactextract`` is supported by plugin (<a href="https://github.com/isciences/exactextract?tab=readme-ov-file#supported-statistics">statistics</a>), including array result type (usage of these statistics might slow down calculation and saving stage).
-- **Usage of QGIS parallel engine** There is an option to process statistics calculation in multiple parts (subtasks/batch option). Calculation of statistics in this case is done in parallel manner using ``QgsTaskManager`` engine. To configure number of parallel cores it will use you should configure `Max Threads` option in QGIS settings.
-- **Support for multiband rasters** In case there's a multiband raster - each band is processed during calculations and is output as separate set of columns.
+- **Multiple supported statistics**: Every statistic given by ``exactextract`` is supported by plugin (<a href="https://github.com/isciences/exactextract?tab=readme-ov-file#supported-statistics">statistics</a>), including array result type (usage of these statistics might slow down calculation and saving stage).
+- **Define own, custom functions** : Write custom Python code to define how features should be calculated. Custom functions should accept raster `values` and `coverage` attributes.
+> **Example:**  Calculate 90th percentile of raster values:
+> ```python
+>import numpy as np
+>
+>def 90th_perc(values, cov):
+>    return np.percentile(values, 90)
+> ```
+> If given statistic is checked in Custom Function combo box there will be new column `90th_perc` added.
+
+There is also option to modify custom functions defined by user before. In order to load the code of existing function and modify it the function name should be checked in Custom Function combo box.
+
+> **Warning:** If there's an error during processing of custom function code whole processing will be stopped. Wrong function may also block QGIS or make it crash.
+- **Usage of QGIS parallel engine**: There is an option to process statistics calculation in multiple parts (subtasks/batch option). Calculation of statistics in this case is done in parallel manner using ``QgsTaskManager`` engine. To configure number of parallel cores it will use you should configure `Max Threads` option in QGIS settings.
+- **Support for multiband rasters**: In case there's a multiband raster - each band is processed during calculations and is output as separate set of columns.
 
 ### Features to be added
 - Support for weighting raster;
