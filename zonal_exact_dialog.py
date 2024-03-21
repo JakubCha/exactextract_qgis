@@ -37,11 +37,18 @@ import pandas as pd
 from .dialog_input_dto import DialogInputDTO
 from .user_communication import UserCommunication, WidgetPlainTextWriter
 from .task_classes import CalculateStatsTask, MergeStatsTask
+from .codeEditor import CodeEditorUI
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'zonal_exact_dialog_base.ui'))
 
+default_code = """import numpy as np
+
+def np_mean(values, cov):
+    average_value=np.average(values, weights=cov)
+    return average_value
+"""
 
 class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
     def __init__(self, parent=None, uc: UserCommunication = None, iface = None, project = None, task_manager: QgsTaskManager = None):
@@ -70,6 +77,9 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.project = project
         self.task_manager: QgsTaskManager = task_manager
         
+        self.editor = CodeEditorUI(default_code)
+        self.editor.setWindowTitle("Custom Function Code Editor")
+        
         self.setupUi(self)
         
         self.widget_console = WidgetPlainTextWriter(self.mPlainText)
@@ -90,6 +100,16 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.mQgsOutputFileWidget.setFilter("Documents (*.csv *.parquet)")
         
         self.mCalculateButton.clicked.connect(self.calculate)
+        
+        self.mAddModifyMetricButton.clicked.connect(self.edit_metric_function)
+        self.editor.codeSubmitted.connect(self.modified_code)
+        
+    def edit_metric_function(self):
+        self.editor.show()
+    
+    def modified_code(self, code):
+        self.widget_console.write_info(code)
+    
     
     def calculate(self):
         """
