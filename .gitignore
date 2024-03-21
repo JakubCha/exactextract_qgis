@@ -2,3 +2,4 @@
 .pyc
 __pycache_/
 /__pycache__
+/highlighter/__pycache_

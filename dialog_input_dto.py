@@ -2,9 +2,9 @@ from dataclasses import dataclass
 from typing import List, Dict, Callable
 from pathlib import Path
 
-import numpy as np
-
 from qgis.core import QgsVectorLayer
+
+from .utils import extract_function_name
 
 @dataclass
 class DialogInputDTO:
@@ -29,13 +29,6 @@ class DialogInputDTO:
         It uses a helper function to extract the function name and another helper function to create 
         the custom function.
         """
-        # Extract the function name from the custom function string
-        def extract_function_name(custom_function_str: str):
-            lines = custom_function_str.splitlines()
-            for line in lines:
-                if line.strip().startswith("def "):
-                    return line.split()[1].split("(")[0]
-
         # Define a helper function to create custom functions. 
         # It's defined outside loop to workaround pythons' late binding
         def create_custom_function(function_str: str):
