@@ -23,11 +23,11 @@
 """
 
 import os
-from typing import List
+from typing import Dict, List
 from pathlib import Path
 
 from qgis.PyQt import uic
-from qgis.PyQt import QtWidgets
+from qgis.PyQt import QtWidgets, QtCore
 from qgis.PyQt.QtCore import QVariant
 from qgis.core import (QgsMapLayerProxyModel, QgsFieldProxyModel, QgsTask, QgsTaskManager, QgsMessageLog, QgsVectorLayer, 
                     QgsFeatureRequest, QgsVectorLayerJoinInfo)
@@ -37,11 +37,19 @@ import pandas as pd
 from .dialog_input_dto import DialogInputDTO
 from .user_communication import UserCommunication, WidgetPlainTextWriter
 from .task_classes import CalculateStatsTask, MergeStatsTask
+from .codeEditor import CodeEditorUI
+from .utils import extract_function_name
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer
 FORM_CLASS, _ = uic.loadUiType(os.path.join(
     os.path.dirname(__file__), 'zonal_exact_dialog_base.ui'))
 
+default_code = """import numpy as np
+
+def np_mean(values, cov):
+    average_value=np.average(values, weights=cov)
+    return average_value
+"""
 
 class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
     def __init__(self, parent=None, uc: UserCommunication = None, iface = None, project = None, task_manager: QgsTaskManager = None):
@@ -64,11 +72,15 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.calculated_stats_list = []
         self.temp_index_field = None
         self.features_count = None
+        self.custom_functions_dict: Dict[str, str] = {}  # it holds custom functions and should reflect mCustomFunctionsComboBox content
         # assign qgis internal variables to class variables
         self.uc = uc
         self.iface = iface
         self.project = project
         self.task_manager: QgsTaskManager = task_manager
+        
+        self.editor = CodeEditorUI(default_code)
+        self.editor.setWindowTitle("Custom Function Code Editor")
         
         self.setupUi(self)
         
@@ -90,6 +102,11 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.mQgsOutputFileWidget.setFilter("Documents (*.csv *.parquet)")
         
         self.mCalculateButton.clicked.connect(self.calculate)
+        
+        self.mAddModifyMetricButton.clicked.connect(self.edit_metric_function)
+        self.editor.codeSubmitted.connect(self.modify_code)
+    
+    
     
     def calculate(self):
         """
@@ -145,10 +162,11 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             vector.selectByIds(selection_ids)
             temp_vector = vector.materialize(QgsFeatureRequest().setFilterFids(self.input_vector.selectedFeatureIds()))
             
+            stats_list = self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list+self.dialog_input.custom_functions_list
             calculation_subtask = CalculateStatsTask(f'calculation subtask {i}', flags=QgsTask.Silent, result_list=self.intermediate_result_list,
                                                     widget_console=self.widget_console,
                                                     polygon_layer=temp_vector, raster=self.dialog_input.raster_layer_path,
-                                                    stats=self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list,
+                                                    stats=stats_list,
                                                     include_cols=[self.temp_index_field])
             calculation_subtask.taskCompleted.connect(self.update_progress_bar)
             self.tasks.append(calculation_subtask)
@@ -269,10 +287,16 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         if not aggregates_stats_list and not arrays_stats_list:
             self.uc.bar_warn(f"You didn't select anything from either Aggregates and Arrays")
             return
+        # create list with custom functions codes that will be converted to callables 
+        custom_functions: List[str] = []
+        selected_functions_names: List[str] = self.mCustomFunctionsComboBox.checkedItems()
+        if selected_functions_names:
+            for selected_function_name in selected_functions_names:
+                custom_functions.append(self.custom_functions_dict[selected_function_name])
         
         self.dialog_input = DialogInputDTO(raster_layer_path=raster_layer_path, vector_layer=vector_layer, parallel_jobs=parallel_jobs, 
                                         output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, arrays_stats_list=arrays_stats_list,
-                                        prefix=prefix)
+                                        prefix=prefix, custom_functions_str_list=custom_functions)
 
     def set_field_vector_layer(self):
         """
@@ -287,4 +311,36 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         Sets index method variable 
         """
         self.temp_index_field = self.mFieldComboBox.currentField()
+        
+    def edit_metric_function(self):
+        """
+        Edits the metric function by setting the editor to the selected custom function code or the default code.
+
+        This method retrieves the topmost checked custom function from the combobox, gets the corresponding code from the
+        custom_functions_dict, and sets the editor to display that code. If no item is selected or the list is empty, the
+        default code is used instead.
+        """
+        try:
+            function_name = self.mCustomFunctionsComboBox.checkedItems()[0]
+            code = self.custom_functions_dict[function_name]
+        except IndexError:  # no item selected or list is empty
+            code = default_code
+        # set editor to that code
+        self.editor.set_code(code)
+        self.editor.show()
+    
+    def modify_code(self, code: str):
+        """
+        Modifies the code in the custom functions dictionary and updates the combobox
+
+        Args:
+            code: The code to be modified and added to the dictionary.
+        """
+        # get function name as string
+        function_name = extract_function_name(code)
+        # modify the code in the dict
+        self.custom_functions_dict[function_name] = code
+        # if function name does not exist in combobox add function to combobox
+        if self.mCustomFunctionsComboBox.findText(function_name) == -1:
+            self.mCustomFunctionsComboBox.addItemWithCheckState(function_name, QtCore.Qt.Checked)
         
