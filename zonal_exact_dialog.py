@@ -88,6 +88,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         
         # set filters on combo boxes to get correct layer types
         self.mRasterLayerComboBox.setFilters(QgsMapLayerProxyModel.RasterLayer)
+        self.mWeightsLayerComboBox.setFilters(QgsMapLayerProxyModel.RasterLayer)
         self.mVectorLayerComboBox.setFilters(QgsMapLayerProxyModel.PolygonLayer)
         # set ID field combo box to current vector layer
         self.mFieldComboBox.setFilters(QgsFieldProxyModel.LongLong | QgsFieldProxyModel.Int)
@@ -100,6 +101,8 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.mFieldComboBox.fieldChanged.connect(self.set_id_field)
         # set output file allowed extensions
         self.mQgsOutputFileWidget.setFilter("Documents (*.csv *.parquet)")
+        # make weights layer empty as default
+        self.mWeightsLayerComboBox.setCurrentIndex(0)
         
         self.mCalculateButton.clicked.connect(self.calculate)
         
@@ -164,10 +167,9 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             
             stats_list = self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list+self.dialog_input.custom_functions_list
             calculation_subtask = CalculateStatsTask(f'calculation subtask {i}', flags=QgsTask.Silent, result_list=self.intermediate_result_list,
-                                                    widget_console=self.widget_console,
-                                                    polygon_layer=temp_vector, raster=self.dialog_input.raster_layer_path,
-                                                    stats=stats_list,
-                                                    include_cols=[self.temp_index_field])
+                                                    widget_console=self.widget_console, polygon_layer=temp_vector, 
+                                                    raster=self.dialog_input.raster_layer_path, weights=self.dialog_input.weights_layer_path, 
+                                                    stats=stats_list, include_cols=[self.temp_index_field])
             calculation_subtask.taskCompleted.connect(self.update_progress_bar)
             self.tasks.append(calculation_subtask)
             self.merge_task.addSubTask(calculation_subtask, [], QgsTask.ParentDependsOnSubTask)
@@ -251,42 +253,22 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         Gets input values from dialog and puts it into `DialogInputDTO` class object.
         """
         raster_layer_path: str = self.mRasterLayerComboBox.currentLayer().dataProvider().dataSourceUri()
+        weights_layer_path: str = None
+        if self.mWeightsLayerComboBox.currentLayer():
+            weights_layer_path = self.mWeightsLayerComboBox.currentLayer().dataProvider().dataSourceUri()
         vector_layer: QgsVectorLayer = self.mVectorLayerComboBox.currentLayer()
         parallel_jobs: int = self.mSpinBox.value()
         output_file_path: Path = Path(self.mQgsOutputFileWidget.filePath())
         aggregates_stats_list: List[str] = self.mAggregatesComboBox.checkedItems()
         arrays_stats_list: List[str] = self.mArraysComboBox.checkedItems()
         prefix: str = self.mPrefixEdit.text()
-        # check if both raster and vector layers are set
-        if not raster_layer_path or not vector_layer:
-            self.uc.bar_warn(f"You didn't select raster layer or vector layer")
-            return
-        # check if ID field is set
-        if not self.temp_index_field:
-            self.uc.bar_warn(f"You didn't select ID field")
-            return
-        # check if ID field is unique
-        # TODO: Checking uniqueness would require a looping over all features in the vector layer, which is slow and may take a lot of time
-        # depending on size of the input dataset therefore it is omitted for now until we have a better solution
-        # We might add a checkbox to let user decide wether we should check uniqueness (with given information that it might be slow operation)
-        if not output_file_path:
-            self.uc.bar_warn(f"You didn't select output file path")
-            return
-        # check if output file extension is CSV or Parquet
-        if output_file_path.suffix != ".csv" and output_file_path.suffix != '.parquet':
-            self.uc.bar_warn(f"Allowed output formats are CSV (.csv) or Parquet (.parquet)")
-            return
-        else:
-            if output_file_path.suffix == '.parquet':
-                try:
-                    import fastparquet
-                except ImportError:
-                    self.uc.bar_warn(f"Parquet output format is supported only if fastparquet library is installed")
-                    return
-        # check if both stats lists are empty
-        if not aggregates_stats_list and not arrays_stats_list:
-            self.uc.bar_warn(f"You didn't select anything from either Aggregates and Arrays")
-            return
+        
+        try:
+            self.control_input(raster_layer_path=raster_layer_path, vector_layer=vector_layer, 
+                            output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, arrays_stats_list=arrays_stats_list)
+        except ValueError:
+            return  # there's been error during control of the input values and we can't push processing further
+        
         # create list with custom functions codes that will be converted to callables 
         custom_functions: List[str] = []
         selected_functions_names: List[str] = self.mCustomFunctionsComboBox.checkedItems()
@@ -294,10 +276,56 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             for selected_function_name in selected_functions_names:
                 custom_functions.append(self.custom_functions_dict[selected_function_name])
         
-        self.dialog_input = DialogInputDTO(raster_layer_path=raster_layer_path, vector_layer=vector_layer, parallel_jobs=parallel_jobs, 
-                                        output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, arrays_stats_list=arrays_stats_list,
-                                        prefix=prefix, custom_functions_str_list=custom_functions)
+        self.dialog_input = DialogInputDTO(raster_layer_path=raster_layer_path, weights_layer_path=weights_layer_path,  vector_layer=vector_layer, 
+                                        parallel_jobs=parallel_jobs, output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, 
+                                        arrays_stats_list=arrays_stats_list, prefix=prefix, custom_functions_str_list=custom_functions)
 
+    def control_input(self, raster_layer_path, vector_layer, output_file_path, aggregates_stats_list, arrays_stats_list):
+        """
+        Processes the input data by checking the validity of the input parameters.
+
+        This method checks if both raster and vector layers are set, if the ID field is set, if the ID field is unique, if an output
+        file path is selected, if the output file extension is CSV or Parquet, and if both stats lists are empty.
+
+        Args:
+            raster_layer_path: Path - The path to the raster layer.
+            vector_layer: QgsVectorLayer - The vector layer.
+            temp_index_field: str - The ID field.
+            output_file_path: Path - The path to the output file.
+            aggregates_stats_list: List[str] - The list of aggregates statistics.
+            arrays_stats_list: List[str] - The list of arrays statistics.
+        """
+        # check if both raster and vector layers are set
+        if not raster_layer_path or not vector_layer:
+            self.uc.bar_warn(f"You didn't select raster layer or vector layer")
+            raise ValueError()
+        # check if ID field is set
+        if not self.temp_index_field:
+            self.uc.bar_warn(f"You didn't select ID field")
+            raise ValueError()
+        # check if ID field is unique
+        # TODO: Checking uniqueness would require a looping over all features in the vector layer, which is slow and may take a lot of time
+        # depending on size of the input dataset therefore it is omitted for now until we have a better solution
+        # We might add a checkbox to let user decide wether we should check uniqueness (with given information that it might be slow operation)
+        if not output_file_path:
+            self.uc.bar_warn(f"You didn't select output file path")
+            raise ValueError()
+        # check if output file extension is CSV or Parquet
+        if output_file_path.suffix != ".csv" and output_file_path.suffix != '.parquet':
+            self.uc.bar_warn(f"Allowed output formats are CSV (.csv) or Parquet (.parquet)")
+            raise ValueError()
+        else:
+            if output_file_path.suffix == '.parquet':
+                try:
+                    import fastparquet
+                except ImportError:
+                    self.uc.bar_warn(f"Parquet output format is supported only if fastparquet library is installed")
+                    raise ValueError()
+        # check if both stats lists are empty
+        if not aggregates_stats_list and not arrays_stats_list:
+            self.uc.bar_warn(f"You didn't select anything from either Aggregates and Arrays")
+            raise ValueError()
+    
     def set_field_vector_layer(self):
         """
         Sets fields to the Field ComboBox if vector layer has changed

@@ -26,7 +26,7 @@ This is a repository for the QGIS plugin that allows to aggregate/summarize valu
 "Zonal statistics" tool in QGIS currently have an issues (<a href="https://github.com/qgis/QGIS/issues/52223">1</a>, <a href="https://github.com/qgis/QGIS/issues/38273">2</a>) that yield wrong results in certain situations.
 
 ### Features
-- **Multiple supported statistics**: Every statistic given by ``exactextract`` is supported by plugin (<a href="https://github.com/isciences/exactextract?tab=readme-ov-file#supported-statistics">statistics</a>), including array result type (usage of these statistics might slow down calculation and saving stage).
+- **Multiple supported statistics**: Every statistic given by ``exactextract`` is supported by plugin (<a href="https://github.com/isciences/exactextract?tab=readme-ov-file#supported-statistics">statistics</a>), including array result type (usage of these statistics might slow down calculation and saving stage) and weighted statistics (statistics with `weighted_` name).
 - **Define own, custom functions** : Write custom Python code to define how features should be calculated. Custom functions should accept raster `values` and `coverage` attributes.
 > **Example:**  Calculate 90th percentile of raster values:
 > ```python
@@ -44,7 +44,6 @@ There is also option to modify custom functions defined by user before. In order
 - **Support for multiband rasters**: In case there's a multiband raster - each band is processed during calculations and is output as separate set of columns.
 
 ### Features to be added
-- Support for weighting raster;
 - Move all heavy operations to QGIS ``QgsTask``;
 - Ability to output geospatial layer instead of CSV/Parquet only - It might be difficult due to lack of performant way to join `GeoDataFrame` to `QgsVectorLayer`;
 
