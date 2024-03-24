@@ -23,6 +23,7 @@
 """
 
 import os
+import sys
 from typing import Dict, List
 from pathlib import Path
 
@@ -109,9 +110,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         
         self.mAddModifyMetricButton.clicked.connect(self.edit_metric_function)
         self.editor.codeSubmitted.connect(self.modify_code)
-    
-    
-    
+
     def calculate(self):
         """
         The calculate method disables the calculate button, gets input values from the dialog 

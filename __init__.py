@@ -31,6 +31,6 @@ def classFactory(iface):  # pylint: disable=invalid-name
     :param iface: A QGIS interface instance.
     :type iface: QgsInterface
     """
-    #
+
     from .zonal_exact import ZonalExact
     return ZonalExact(iface)
