@@ -82,6 +82,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.task_manager: QgsTaskManager = task_manager
         
         self.editor = CodeEditorUI(default_code)
+        self.editor.resize(600, 300)
         self.editor.setWindowTitle("Custom Function Code Editor")
         
         self.setupUi(self)
