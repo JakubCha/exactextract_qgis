@@ -286,6 +286,15 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                                         arrays_stats_list=arrays_stats_list, prefix=prefix, custom_functions_str_list=custom_functions)
     
     def extract_layers_path(self, layers: List[QgsMapLayer]):
+        """
+        This method extracts the data source URIs of the input map layers and returns a list of the extracted URIs.
+
+        Args:
+            layers: List[QgsMapLayer] - A list of QGIS map layers.
+
+        Returns:
+            List[str] - A list of the data source URIs of the input map layers.
+        """
         layers_path: List[str] = []
         for layer in layers:
             layers_path.append(layer.dataProvider().dataSourceUri())

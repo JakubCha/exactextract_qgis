@@ -10,15 +10,18 @@ from qgis.core import QgsMapLayerType, QgsRasterLayer
 
 class MultiRasterLayerSelectionWidget(QtWidgets.QListWidget):
     def __init__(self, parent=None):
+        """
+        Initializes the MultiRasterLayerSelectionWidget class.
+        
+        Args:
+            parent: The parent widget.
+        """
         super().__init__()
         self.project = parent.project
         self.previously_selected: List[str] = []
         layer_tree = self.project.layerTreeRoot()
         
         # Connect to signals for layer tree change events
-        # layer_tree.addedChildren.connect(self.update_layers)
-        # layer_tree.removedChildren.connect(self.update_layers)
-        # layer_tree.nameChanged.connect(self.update_layers)
         self.project.layersAdded.connect(self.update_layers)
         layer_tree.nameChanged.connect(self.update_layers)
         self.project.layersRemoved.connect(self.update_layers)
@@ -29,6 +32,9 @@ class MultiRasterLayerSelectionWidget(QtWidgets.QListWidget):
     def checked_layers(self):
         """
         Returns layers that were checked in the list
+
+        Returns:
+            List[QgsRasterLayer]: A list of checked raster layers.
         """
         checked_items_text = []
         for n in range(self.count()):
@@ -47,7 +53,6 @@ class MultiRasterLayerSelectionWidget(QtWidgets.QListWidget):
         """
         Updates the list of layers in the widget to the current state
         """
-        print('1')
         self.clear()
         # Update the list of layers in the widget whenever layers are added or removed from the legend
         layers = [l for l in self.project.mapLayers().values() if l.type() == QgsMapLayerType.RasterLayer]
