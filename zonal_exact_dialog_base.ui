@@ -439,7 +439,7 @@ subtasks</string>
   <customwidget>
    <class>MultiRasterLayerSelectionWidget</class>
    <extends>QListWidget</extends>
-   <header>zonal_exact.layer_list_widget</header>
+   <header>zonal_exact.widgets.layer_list_widget</header>
   </customwidget>
  </customwidgets>
  <resources/>

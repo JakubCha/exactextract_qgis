@@ -38,7 +38,7 @@ import pandas as pd
 from .dialog_input_dto import DialogInputDTO
 from .user_communication import UserCommunication, WidgetPlainTextWriter
 from .task_classes import CalculateStatsTask, MergeStatsTask
-from .codeEditor import CodeEditorUI
+from .widgets.codeEditor import CodeEditorUI
 from .utils import extract_function_name
 
 # This loads your .ui file so that PyQt can populate your plugin with the elements from Qt Designer

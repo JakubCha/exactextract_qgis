@@ -27,7 +27,7 @@ The geoprocessesing tool "Zonal statistics" currently implemented in QGIS have a
 
 ### Features
 - **Multiple supported statistics**: Every statistic given by ``exactextract`` is supported by plugin (<a href="https://github.com/isciences/exactextract?tab=readme-ov-file#supported-statistics">statistics</a>), including array result type (usage of these statistics might slow down calculation and saving stage) and weighted statistics (statistics with `weighted_` name).
-- **Define own, custom functions** : Write custom Python code to define how features should be calculated. Custom functions should accept raster `values` and `coverage` attributes.
+- **Define own, custom functions** : Write custom Python code to define extra, additional features for raster zonal statistics. Custom functions should accept raster `values` and `coverage` attributes.
 > **Example:**  Calculate 90th percentile of raster values:
 > ```python
 >import numpy as np
@@ -37,7 +37,7 @@ The geoprocessesing tool "Zonal statistics" currently implemented in QGIS have a
 > ```
 > If given statistic is checked in Custom Function combo box there will be new column `90th_perc` added.
 
-There is also option to modify custom functions defined by user before. In order to load the code of existing function and modify it the function name should be checked in Custom Function combo box.
+There is also option to modify custom functions defined by user earlier. In order to load the code of existing function and modify it the function name should be checked in Custom Function combo box. Custom functions defined in this plugin are removed when plugin is reloaded or qgis is restarted. User should save custom functions for later usage outside of the plugin.
 
 > **Warning:** If there's an error during processing of custom function code whole processing will be stopped. Wrong function may also block QGIS or make it crash.
 - **Usage of QGIS parallel engine**: There is an option to process statistics calculation in multiple parts (subtasks/batch option). Calculation of statistics in this case is done in parallel manner using ``QgsTaskManager`` engine. To configure number of parallel cores it will use you should configure `Max Threads` option in QGIS settings.
