@@ -41,7 +41,9 @@ There is also option to modify custom functions defined by user earlier. In orde
 
 > **Warning:** If there's an error during processing of custom function code whole processing will be stopped. Wrong function may also block QGIS or make it crash.
 - **Usage of QGIS parallel engine**: There is an option to process statistics calculation in multiple parts (subtasks/batch option). Calculation of statistics in this case is done in parallel manner using ``QgsTaskManager`` engine. To configure number of parallel cores it will use you should configure `Max Threads` option in QGIS settings.
-- **Support for multiband rasters**: In case there's a multiband raster - each band is processed during calculations and is output as separate set of columns.
+- **Support multiple values rasters**: Selection of multiple rasters will process each raster separately and append to the result.
+- **Support multiband rasters**: In case there's a multiband raster - each band is processed during calculations and is output as separate set of columns.
+- **Support weights raster**
 
 ### Features to be added
 - Move all heavy operations to QGIS ``QgsTask``;
