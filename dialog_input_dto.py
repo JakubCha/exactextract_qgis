@@ -8,7 +8,7 @@ from .utils import extract_function_name
 
 @dataclass
 class DialogInputDTO:
-    raster_layer_path: str
+    raster_layers_path: List[str]
     weights_layer_path: str
     vector_layer: QgsVectorLayer
     parallel_jobs: int

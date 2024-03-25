@@ -31,7 +31,7 @@ from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets, QtCore
 from qgis.PyQt.QtCore import QVariant
 from qgis.core import (QgsMapLayerProxyModel, QgsFieldProxyModel, QgsTask, QgsTaskManager, QgsMessageLog, QgsVectorLayer, 
-                    QgsFeatureRequest, QgsVectorLayerJoinInfo)
+                    QgsFeatureRequest, QgsVectorLayerJoinInfo, QgsRasterLayer, QgsMapLayer)
 
 import pandas as pd
 
@@ -90,7 +90,6 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.widget_console = WidgetPlainTextWriter(self.mPlainText)
         
         # set filters on combo boxes to get correct layer types
-        self.mRasterLayerComboBox.setFilters(QgsMapLayerProxyModel.RasterLayer)
         self.mWeightsLayerComboBox.setFilters(QgsMapLayerProxyModel.RasterLayer)
         self.mVectorLayerComboBox.setFilters(QgsMapLayerProxyModel.PolygonLayer)
         # set ID field combo box to current vector layer
@@ -171,7 +170,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             stats_list = self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list+self.dialog_input.custom_functions_list
             calculation_subtask = CalculateStatsTask(f'calculation subtask {i}', flags=QgsTask.Silent, result_list=self.intermediate_result_list,
                                                     widget_console=self.widget_console, polygon_layer=temp_vector, 
-                                                    raster=self.dialog_input.raster_layer_path, weights=self.dialog_input.weights_layer_path, 
+                                                    rasters=self.dialog_input.raster_layers_path, weights=self.dialog_input.weights_layer_path, 
                                                     stats=stats_list, include_cols=[self.temp_index_field])
             calculation_subtask.taskCompleted.connect(self.update_progress_bar)
             self.tasks.append(calculation_subtask)
@@ -255,7 +254,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         """
         Gets input values from dialog and puts it into `DialogInputDTO` class object.
         """
-        raster_layer_path: str = self.mRasterLayerComboBox.currentLayer().dataProvider().dataSourceUri()
+        raster_layers_path: List[QgsRasterLayer] = self.extract_layers_path(self.mRasterLayersList.checked_layers())
         weights_layer_path: str = None
         if self.mWeightsLayerComboBox.currentLayer():
             weights_layer_path = self.mWeightsLayerComboBox.currentLayer().dataProvider().dataSourceUri()
@@ -270,7 +269,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         prefix: str = self.mPrefixEdit.text()
         
         try:
-            self.control_input(raster_layer_path=raster_layer_path, vector_layer=vector_layer, 
+            self.control_input(raster_layers_path=raster_layers_path, vector_layer=vector_layer, 
                             output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, arrays_stats_list=arrays_stats_list)
         except ValueError as exc:
             raise exc  # there's been error during control of the input values and we can't push processing further
@@ -282,11 +281,17 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             for selected_function_name in selected_functions_names:
                 custom_functions.append(self.custom_functions_dict[selected_function_name])
         
-        self.dialog_input = DialogInputDTO(raster_layer_path=raster_layer_path, weights_layer_path=weights_layer_path,  vector_layer=vector_layer, 
+        self.dialog_input = DialogInputDTO(raster_layers_path=raster_layers_path, weights_layer_path=weights_layer_path,  vector_layer=vector_layer, 
                                         parallel_jobs=parallel_jobs, output_file_path=output_file_path, aggregates_stats_list=aggregates_stats_list, 
                                         arrays_stats_list=arrays_stats_list, prefix=prefix, custom_functions_str_list=custom_functions)
-
-    def control_input(self, raster_layer_path, vector_layer, output_file_path, aggregates_stats_list, arrays_stats_list):
+    
+    def extract_layers_path(self, layers: List[QgsMapLayer]):
+        layers_path: List[str] = []
+        for layer in layers:
+            layers_path.append(layer.dataProvider().dataSourceUri())
+        return layers_path
+    
+    def control_input(self, raster_layers_path, vector_layer, output_file_path, aggregates_stats_list, arrays_stats_list):
         """
         Processes the input data by checking the validity of the input parameters.
 
@@ -294,7 +299,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         file path is selected, if the output file extension is CSV or Parquet, and if both stats lists are empty.
 
         Args:
-            raster_layer_path: Path - The path to the raster layer.
+            raster_layers_path: Path - The path to the raster layer.
             vector_layer: QgsVectorLayer - The vector layer.
             temp_index_field: str - The ID field.
             output_file_path: Path - The path to the output file.
@@ -302,7 +307,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             arrays_stats_list: List[str] - The list of arrays statistics.
         """
         # check if both raster and vector layers are set
-        if not raster_layer_path or not vector_layer:
+        if not raster_layers_path or not vector_layer:
             err_msg = f"You didn't select raster layer or vector layer"
             raise ValueError(err_msg)
         # check if ID field is set

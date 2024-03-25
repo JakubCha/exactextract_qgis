@@ -6,12 +6,12 @@ from qgis.core import QgsTask, QgsMessageLog, QgsVectorLayer
 from .user_communication import WidgetPlainTextWriter
 
 class CalculateStatsTask(QgsTask):
-    def __init__(self, description, flags, widget_console, result_list, polygon_layer, raster, weights, stats, include_cols):
+    def __init__(self, description, flags, widget_console, result_list, polygon_layer, rasters, weights, stats, include_cols):
         super().__init__(description, flags)
         self.description = description
         self.widget_console: WidgetPlainTextWriter = widget_console
         self.polygon_layer: QgsVectorLayer = polygon_layer
-        self.raster: str = raster
+        self.rasters: str = rasters
         self.weights: str = weights
         self.stats: List[str] = stats
         self.include_cols: List[str] = include_cols
@@ -22,7 +22,7 @@ class CalculateStatsTask(QgsTask):
         QgsMessageLog.logMessage(f'Started task: {self.description} with {self.polygon_layer.featureCount()} polygons')
         self.widget_console.write_info(f'Started task: {self.description} with {self.polygon_layer.featureCount()} polygons')
         
-        result_stats = exact_extract(vec=self.polygon_layer, rast=self.raster, weights=self.weights, ops=self.stats, 
+        result_stats = exact_extract(vec=self.polygon_layer, rast=self.rasters, weights=self.weights, ops=self.stats, 
                                     include_cols=self.include_cols, output="pandas")
         self.result_list.append(result_stats)
         
