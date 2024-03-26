@@ -87,6 +87,8 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         
         self.setupUi(self)
         
+        self.set_id_field()
+        
         self.widget_console = WidgetPlainTextWriter(self.mPlainText)
         
         # set filters on combo boxes to get correct layer types
@@ -345,6 +347,12 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         if not aggregates_stats_list and not arrays_stats_list:
             err_msg = f"You didn't select anything from either Aggregates and Arrays"
             raise ValueError(err_msg)
+        # array output statistics are not proper for fastparquet 
+        # check if there are array output statistics to be calculated when using parquet as an output format
+        if output_file_path.suffix == '.parquet' and arrays_stats_list:
+            err_msg = f'Array stats: {",".join(arrays_stats_list)} are forbidden in conjuction with .parquet output format'
+            raise ValueError(err_msg)
+            
     
     def set_field_vector_layer(self):
         """

@@ -40,11 +40,6 @@
        </item>
        <item>
         <property name="text">
-         <string>frac</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
          <string>majority</string>
         </property>
        </item>
@@ -111,11 +106,6 @@
        <item>
         <property name="text">
          <string>variety</string>
-        </property>
-       </item>
-       <item>
-        <property name="text">
-         <string>weighted_frac</string>
         </property>
        </item>
        <item>
@@ -299,6 +289,11 @@ subtasks</string>
        </item>
        <item>
         <property name="text">
+         <string>frac</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
          <string>center_x</string>
         </property>
        </item>
@@ -320,6 +315,11 @@ subtasks</string>
        <item>
         <property name="text">
          <string>weights</string>
+        </property>
+       </item>
+       <item>
+        <property name="text">
+         <string>weighted_frac</string>
         </property>
        </item>
       </widget>
