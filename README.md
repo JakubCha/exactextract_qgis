@@ -69,6 +69,5 @@ It will be out of **beta** when:
 In current version of the plugin there are 4 packages required:
 - [**REQUIRED**] Installed through OSGeo4W setup utility (or `pip install pandas`):
   - pandas
-- [**REQUIRED**] You may use <a href="https://github.com/JakubCha/exactextract_qgis/tree/main/requirements">wheel</a> delivered in this repository (tested with QGIS versions 3.34 and 3.36) or you can compile and install it manually from GitHub repository (``exactextract`` library author is working on uploading it to PyPi) and then ``pip install`` wheel (.whl) file:
-  - <a href="https://github.com/isciences/exactextract/tree/master/python">exactextract</a> (zonal statistics computation engine)
+- [**REQUIRED**] From PyPi repository: `pip install exactextract`
 - [**OPTIONAL**] It's advised to install `fastparquet` (`pip install fastparquet`) to allow saving  results as a parquet file format;
