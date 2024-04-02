@@ -31,7 +31,7 @@ from qgis.PyQt import uic
 from qgis.PyQt import QtWidgets, QtCore
 from qgis.PyQt.QtCore import QVariant
 from qgis.core import (QgsMapLayerProxyModel, QgsFieldProxyModel, QgsTask, QgsTaskManager, QgsMessageLog, QgsVectorLayer, 
-                    QgsFeatureRequest, QgsVectorLayerJoinInfo, QgsRasterLayer, QgsMapLayer)
+                    QgsFeatureRequest, QgsVectorLayerJoinInfo, QgsRasterLayer, QgsMapLayer, QgsWkbTypes)
 
 import pandas as pd
 
@@ -164,10 +164,32 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.merge_task.taskCompleted.connect(self.update_progress_bar)
         
         self.tasks = []
+        
         for i in range(0, self.features_count, batch_size):
-            selection_ids = list(range(i, i + batch_size))
-            vector.selectByIds(selection_ids)
-            temp_vector = vector.materialize(QgsFeatureRequest().setFilterFids(self.input_vector.selectedFeatureIds()))
+            if self.dialog_input.parallel_jobs == 1:
+                temp_vector = vector
+            else:
+                selection_ids = list(range(i, i + batch_size))
+                vector.selectByIds(selection_ids)
+                
+                # Create a new memory layer with the same geometry type and fields structure as the source layer
+                crs = vector.crs()
+                fields = vector.fields()
+                geom_type = vector.geometryType()
+                temp_vector = QgsVectorLayer(
+                    QgsWkbTypes.geometryDisplayString(geom_type) +
+                    "?crs=" + crs + "&index=yes",
+                    "Memory layer",
+                    "memory"
+                )
+                memoryLayerDataProvider = temp_vector.dataProvider()
+                # copy the table structure
+                temp_vector.startEditing()
+                memoryLayerDataProvider.addAttributes(fields)
+                temp_vector.commitChanges()
+                # Add selected features to the new memory layer
+                memoryLayerDataProvider.addFeatures(vector.selectedFeatures())
+                # temp_vector = vector.materialize(QgsFeatureRequest().setFilterFids(vector.selectedFeatureIds()))
             
             stats_list = self.dialog_input.aggregates_stats_list+self.dialog_input.arrays_stats_list+self.dialog_input.custom_functions_list
             calculation_subtask = CalculateStatsTask(f'calculation subtask {i}', flags=QgsTask.Silent, result_list=self.intermediate_result_list,

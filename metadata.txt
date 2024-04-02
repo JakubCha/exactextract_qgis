@@ -6,7 +6,7 @@
 name=Zonal Exact Extract
 qgisMinimumVersion=3.30
 description=Zonal Statistics of rasters using Exact Extract library
-version=0.2
+version=0.41
 author=Jakub Charyton
 email=jakub.charyton@gmail.com
 
