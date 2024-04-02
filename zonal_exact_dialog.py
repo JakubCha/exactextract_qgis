@@ -165,11 +165,14 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         
         self.tasks = []
         
+        vector.selectAll()
+        feature_ids = vector.selectedFeatureIds()
+        vector.removeSelection()
         for i in range(0, self.features_count, batch_size):
-            if self.dialog_input.parallel_jobs == 1:
+            if self.dialog_input.parallel_jobs == 1 or :
                 temp_vector = vector
             else:
-                selection_ids = list(range(i, i + batch_size))
+                selection_ids = feature_ids[i : i + batch_size]
                 vector.selectByIds(selection_ids)
                 
                 # Create a new memory layer with the same geometry type and fields structure as the source layer
@@ -178,7 +181,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                 geom_type = vector.geometryType()
                 temp_vector = QgsVectorLayer(
                     QgsWkbTypes.geometryDisplayString(geom_type) +
-                    "?crs=" + crs + "&index=yes",
+                    "?crs=" + crs.authid() + "&index=yes",
                     "Memory layer",
                     "memory"
                 )
@@ -283,7 +286,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         if self.mWeightsLayerComboBox.currentLayer():
             weights_layer_path = self.mWeightsLayerComboBox.currentLayer().dataProvider().dataSourceUri()
         vector_layer: QgsVectorLayer = self.mVectorLayerComboBox.currentLayer()
-        parallel_jobs: int = self.mSpinBox.value()
+        parallel_jobs: int = self.mSubtasksSpinBox.value()
         if self.mQgsOutputFileWidget.filePath() == '': 
             output_file_path = None
         else: 
