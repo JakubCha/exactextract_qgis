@@ -169,7 +169,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         feature_ids = vector.selectedFeatureIds()
         vector.removeSelection()
         for i in range(0, self.features_count, batch_size):
-            if self.dialog_input.parallel_jobs == 1 or :
+            if self.dialog_input.parallel_jobs == 1:
                 temp_vector = vector
             else:
                 selection_ids = feature_ids[i : i + batch_size]
