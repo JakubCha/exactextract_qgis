@@ -33,4 +33,5 @@ def classFactory(iface):  # pylint: disable=invalid-name
     """
 
     from .zonal_exact import ZonalExact
+
     return ZonalExact(iface)

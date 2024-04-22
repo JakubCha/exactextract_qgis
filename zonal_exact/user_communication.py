@@ -24,46 +24,49 @@
 from qgis.PyQt.QtWidgets import QMessageBox, QPlainTextEdit
 from qgis.core import QgsMessageLog, Qgis
 
+
 class UserCommunication:
     """Class for communication with user"""
-    
+
     def __init__(self, iface, context):
         self.iface = iface
         self.context = context
-        
+
     def show_info(self, msg):
         QMessageBox.information(self.iface.mainWindow(), self.context, msg)
-        
+
     def show_warn(self, msg):
         QMessageBox.warning(self.iface.mainWindow(), self.context, msg)
-        
+
     def log_info(self, msg):
         QgsMessageLog.logMessage(msg, self.context, Qgis.Info)
-        
+
     def bar_error(self, msg):
         self.iface.messageBar().pushMessage(self.context, msg, level=Qgis.Critical)
 
     def bar_warn(self, msg, dur=5):
-        self.iface.messageBar().pushMessage(self.context, msg, level=Qgis.Warning, duration=dur)
-        
+        self.iface.messageBar().pushMessage(
+            self.context, msg, level=Qgis.Warning, duration=dur
+        )
+
     def bar_info(self, msg, dur=5):
         self.iface.messageBar().pushMessage(self.context, msg, duration=dur)
 
     def clear_bar_messages(self):
         self.iface.messageBar().clearWidgets()
-        
+
+
 class WidgetPlainTextWriter:
     """Class for writing text to PlainTextEdit Widget"""
-    
+
     def __init__(self, plain_text_widget: QPlainTextEdit):
         self.plain_text_widget: QPlainTextEdit = plain_text_widget
-        
+
     def write_info(self, msg: str):
-        self.plain_text_widget.appendPlainText(f'[INFO]: {msg}')
-        
+        self.plain_text_widget.appendPlainText(f"[INFO]: {msg}")
+
     def write_warn(self, msg: str):
-        self.plain_text_widget.appendPlainText(f'[WARNING]: {msg}')
-        
+        self.plain_text_widget.appendPlainText(f"[WARNING]: {msg}")
+
     def write_error(self, msg: str):
-        self.plain_text_widget.appendPlainText(f'[ERROR]: {msg}')
-    
+        self.plain_text_widget.appendPlainText(f"[ERROR]: {msg}")

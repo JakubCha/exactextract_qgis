@@ -30,14 +30,14 @@ class JsonHighlighter(QtGui.QSyntaxHighlighter):
         cformat = QtGui.QTextCharFormat()
         cformat.setForeground(QtCore.Qt.darkBlue)
         cformat.setFontWeight(QtGui.QFont.Bold)
-        pattern = QtCore.QRegExp("([-0-9.]+)(?!([^\"]*\"[\\s]*\\:))")
+        pattern = QtCore.QRegExp('([-0-9.]+)(?!([^"]*"[\\s]*\\:))')
 
         rule = HighlightRule(pattern, cformat)
         self.rules.append(rule)
 
         # key
         cformat = QtGui.QTextCharFormat()
-        pattern = QtCore.QRegExp("(\"[^\"]*\")\\s*\\:")
+        pattern = QtCore.QRegExp('("[^"]*")\\s*\\:')
         # cformat.setForeground(QtCore.Qt.darkMagenta)
         cformat.setFontWeight(QtGui.QFont.Bold)
 
@@ -46,7 +46,7 @@ class JsonHighlighter(QtGui.QSyntaxHighlighter):
 
         # value
         cformat = QtGui.QTextCharFormat()
-        pattern = QtCore.QRegExp(":+(?:[: []*)(\"[^\"]*\")")
+        pattern = QtCore.QRegExp(':+(?:[: []*)("[^"]*")')
         cformat.setForeground(QtCore.Qt.darkGreen)
 
         rule = HighlightRule(pattern, cformat)

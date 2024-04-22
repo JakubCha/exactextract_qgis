@@ -24,17 +24,16 @@
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
-from qgis.core import QgsMapLayerProxyModel, QgsProject, QgsApplication
+from qgis.core import QgsProject, QgsApplication
 
 # Initialize Qt resources from file resources.py
 from .resources import *
+
 # Import the code for the dialog
 from .zonal_exact_dialog import ZonalExactDialog
 from .user_communication import UserCommunication
 import os.path
 
-from osgeo import gdal
-import pandas as pd
 
 class ZonalExact:
     """QGIS Plugin Implementation."""
@@ -53,15 +52,14 @@ class ZonalExact:
         self.canvas = self.iface.mapCanvas()
         self.project = QgsProject.instance()
         # initialize UserCommunication
-        self.uc = UserCommunication(iface, 'Zonal ExactExtract')
+        self.uc = UserCommunication(iface, "Zonal ExactExtract")
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
         # initialize locale
-        locale = QSettings().value('locale/userLocale')
+        locale = QSettings().value("locale/userLocale")
         locale_path = os.path.join(
-            self.plugin_dir,
-            'i18n',
-            'ZonalExact_{}.qm'.format(locale))
+            self.plugin_dir, "i18n", "ZonalExact_{}.qm".format(locale)
+        )
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -70,7 +68,7 @@ class ZonalExact:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr(u'&Zonal Exact Extract')
+        self.menu = self.tr("&Zonal Exact Extract")
 
         # Check if plugin was started the first time in current QGIS session
         # Must be set in initGui() to survive plugin reloads
@@ -89,8 +87,7 @@ class ZonalExact:
         :rtype: QString
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
-        return QCoreApplication.translate('ZonalExact', message)
-
+        return QCoreApplication.translate("ZonalExact", message)
 
     def add_action(
         self,
@@ -102,7 +99,8 @@ class ZonalExact:
         add_to_toolbar=True,
         status_tip=None,
         whats_this=None,
-        parent=None):
+        parent=None,
+    ):
         """Add a toolbar icon to the toolbar.
 
         :param icon_path: Path to the icon for this action. Can be a resource
@@ -158,9 +156,7 @@ class ZonalExact:
             self.iface.addToolBarIcon(action)
 
         if add_to_menu:
-            self.iface.addPluginToRasterMenu(
-                self.menu,
-                action)
+            self.iface.addPluginToRasterMenu(self.menu, action)
 
         self.actions.append(action)
 
@@ -169,35 +165,37 @@ class ZonalExact:
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
-        icon_path = ':/plugins/zonal_exact/icons/exact_icon.svg'
+        icon_path = ":/plugins/zonal_exact/icons/exact_icon.svg"
         self.add_action(
             icon_path,
-            text=self.tr(u'Zonal statistics (Exact Extract)'),
+            text=self.tr("Zonal statistics (Exact Extract)"),
             callback=self.run,
-            parent=self.iface.mainWindow())
+            parent=self.iface.mainWindow(),
+        )
 
         # will be set False in run()
         self.first_start = True
 
-
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
         for action in self.actions:
-            self.iface.removePluginRasterMenu(
-                self.tr(u'&Zonal Exact Extract'),
-                action)
+            self.iface.removePluginRasterMenu(self.tr("&Zonal Exact Extract"), action)
             self.iface.removeToolBarIcon(action)
-
 
     def run(self):
         """Run method that performs all the real work"""
 
         # Create the dialog with elements (after translation) and keep reference
         # Only create GUI ONCE in callback, so that it will only load when the plugin is started
-        if self.first_start == True:
+        if self.first_start:
             self.first_start = False
-            self.dlg = ZonalExactDialog(uc=self.uc, iface=self.iface, task_manager=self.task_manager, project=self.project)
-            
+            self.dlg = ZonalExactDialog(
+                uc=self.uc,
+                iface=self.iface,
+                task_manager=self.task_manager,
+                project=self.project,
+            )
+
         # show the dialog
         self.dlg.show()
         # Run the dialog event loop
@@ -207,5 +205,3 @@ class ZonalExact:
             # Do something useful here - delete the line containing pass and
             # substitute with your code.
             pass
-
-    

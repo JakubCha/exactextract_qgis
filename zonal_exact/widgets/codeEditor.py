@@ -11,23 +11,25 @@ DARK_BLUE = QtGui.QColor(118, 150, 185)
 
 
 class CodeEditorUI(QtWidgets.QDialog):
-    codeSubmitted = QtCore.pyqtSignal(str)  # Custom signal to emit when code is submitted
-    
+    codeSubmitted = QtCore.pyqtSignal(
+        str
+    )  # Custom signal to emit when code is submitted
+
     def __init__(self, code: str):
         super(CodeEditorUI, self).__init__()
-        
+
         self.code_editor = CodeEditor()
         self.code_editor.set_code(code)
         self.__highlighter = PythonHighlighter(self.code_editor.document())
-        
+
         # Create OK and Cancel buttons
         self.ok_button = QtWidgets.QPushButton("OK")
         self.cancel_button = QtWidgets.QPushButton("Cancel")
-        
+
         # Connect OK button to a slot
         self.ok_button.clicked.connect(self.ok_pressed)
-        self.cancel_button.clicked.connect(lambda:self.close())
-        
+        self.cancel_button.clicked.connect(lambda: self.close())
+
         # Create layout for buttons
         button_layout = QtWidgets.QHBoxLayout()
         button_layout.addWidget(self.ok_button)
@@ -40,14 +42,14 @@ class CodeEditorUI(QtWidgets.QDialog):
         # Main layout for the widget
         main_layout = QtWidgets.QGridLayout(self)
         main_layout.addWidget(self.code_editor, 0, 0)
-        main_layout.addWidget(button_widget, 1, 0)  
+        main_layout.addWidget(button_widget, 1, 0)
 
     def ok_pressed(self):
         # Emit a signal with the code from the editor
         code = self.code_editor.toPlainText()
         self.codeSubmitted.emit(code)
         self.close()
-        
+
     def set_code(self, code: str):
         # Set code in the editor
         self.code_editor.set_code(code)
@@ -68,7 +70,7 @@ class LineNumberArea(QtWidgets.QWidget):
 class CodeTextEdit(QtWidgets.QPlainTextEdit):
     is_first = False
     pressed_keys = list()
-    
+
     indented = QtCore.pyqtSignal(object)
     unindented = QtCore.pyqtSignal(object)
     commented = QtCore.pyqtSignal(object)
@@ -117,8 +119,7 @@ class CodeTextEdit(QtWidgets.QPlainTextEdit):
         :param string: str. string pattern to remove
         :param line_number: int. line number
         """
-        cursor = QtGui.QTextCursor(
-            self.document().findBlockByLineNumber(line_number))
+        cursor = QtGui.QTextCursor(self.document().findBlockByLineNumber(line_number))
         cursor.select(QtGui.QTextCursor.LineUnderCursor)
         text = cursor.selectedText()
         if text.startswith(string):
@@ -132,8 +133,7 @@ class CodeTextEdit(QtWidgets.QPlainTextEdit):
         :param string: str. string pattern to insert
         :param line_number: int. line number
         """
-        cursor = QtGui.QTextCursor(
-            self.document().findBlockByLineNumber(line_number))
+        cursor = QtGui.QTextCursor(self.document().findBlockByLineNumber(line_number))
         self.setTextCursor(cursor)
         self.textCursor().insertText(string)
 
@@ -146,15 +146,14 @@ class CodeTextEdit(QtWidgets.QPlainTextEdit):
         start_line, end_line = self.get_selection_range()
 
         # indent event
-        if event.key() == QtCore.Qt.Key_Tab and \
-                (end_line - start_line):
-            lines = range(start_line, end_line+1)
+        if event.key() == QtCore.Qt.Key_Tab and (end_line - start_line):
+            lines = range(start_line, end_line + 1)
             self.indented.emit(lines)
             return
 
         # un-indent event
         elif event.key() == QtCore.Qt.Key_Backtab:
-            lines = range(start_line, end_line+1)
+            lines = range(start_line, end_line + 1)
             self.unindented.emit(lines)
             return
 
@@ -188,7 +187,7 @@ class CodeTextEdit(QtWidgets.QPlainTextEdit):
         :param lines: [int]. line numbers
         """
         for line in lines:
-            self.insert_line_start('\t', line)
+            self.insert_line_start("\t", line)
 
     def undo_indent(self, lines):
         """
@@ -197,7 +196,7 @@ class CodeTextEdit(QtWidgets.QPlainTextEdit):
         :param lines: [int]. line numbers
         """
         for line in lines:
-            self.remove_line_start('\t', line)
+            self.remove_line_start("\t", line)
 
     def do_comment(self, lines):
         """
@@ -222,7 +221,7 @@ class CodeEditor(CodeTextEdit):
     def __init__(self):
         super(CodeEditor, self).__init__()
         self.line_number_area = LineNumberArea(self)
-        
+
         self.font = QtGui.QFont()
         self.font.setFamily("Courier New")
         self.font.setStyleHint(QtGui.QFont.Monospace)
@@ -230,7 +229,7 @@ class CodeEditor(CodeTextEdit):
         self.setFont(self.font)
 
         self.tab_size = 4
-        self.setTabStopWidth(self.tab_size * self.fontMetrics().width(' '))
+        self.setTabStopWidth(self.tab_size * self.fontMetrics().width(" "))
 
         self.blockCountChanged.connect(self.update_line_number_area_width)
         self.updateRequest.connect(self.update_line_number_area)
@@ -242,7 +241,7 @@ class CodeEditor(CodeTextEdit):
     def set_code(self, code: str):
         # Set code in the editor
         self.setPlainText(code)
-    
+
     def line_number_area_width(self):
         digits = 1
         max_num = max(1, self.blockCount())
@@ -250,7 +249,7 @@ class CodeEditor(CodeTextEdit):
             max_num *= 0.1
             digits += 1
 
-        space = 30 + self.fontMetrics().width('9') * digits
+        space = 30 + self.fontMetrics().width("9") * digits
         return space
 
     def resizeEvent(self, e):
@@ -275,7 +274,9 @@ class CodeEditor(CodeTextEdit):
                 painter.setPen(DARK_BLUE)
                 width = self.line_number_area.width() - 10
                 height = self.fontMetrics().height()
-                painter.drawText(0, int(top), int(width), int(height), QtCore.Qt.AlignRight, number)
+                painter.drawText(
+                    0, int(top), int(width), int(height), QtCore.Qt.AlignRight, number
+                )
 
             block = block.next()
             top = bottom
