@@ -1,6 +1,7 @@
 *.pyc
 .pyc
 __pycache_/
+.pytest_cache
 /__pycache__
 /highlighter/__pycache_
 symbology-style.db
