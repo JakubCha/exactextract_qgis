@@ -1,1 +1,2 @@
-flake8-qgis
+ruff
+pytest-qgis

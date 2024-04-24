@@ -21,6 +21,8 @@
  *                                                                         *
  ***************************************************************************/
 """
+import os.path
+
 from qgis.PyQt.QtCore import QSettings, QTranslator, QCoreApplication
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction
@@ -32,7 +34,6 @@ from .resources import *
 # Import the code for the dialog
 from .zonal_exact_dialog import ZonalExactDialog
 from .user_communication import UserCommunication
-import os.path
 
 
 class ZonalExact:

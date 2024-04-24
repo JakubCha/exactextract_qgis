@@ -52,7 +52,7 @@ FORM_CLASS, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "zonal_exact_dialog_base.ui")
 )
 
-default_code = """import numpy as np
+DEFAULT_CODE = """import numpy as np
 
 def np_mean(values, cov):
     average_value=np.average(values, weights=cov)
@@ -98,7 +98,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.project = project
         self.task_manager: QgsTaskManager = task_manager
 
-        self.editor = CodeEditorUI(default_code)
+        self.editor = CodeEditorUI(DEFAULT_CODE)
         self.editor.resize(600, 300)
         self.editor.setWindowTitle("Custom Function Code Editor")
 
@@ -178,7 +178,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         """
         self.intermediate_result_list = []
         self.merge_task = MergeStatsTask(
-            f"Zonal ExactExtract task",
+            "Zonal ExactExtract task",
             QgsTask.CanCancel,
             widget_console=self.widget_console,
             result_list=self.intermediate_result_list,
@@ -361,7 +361,9 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                 arrays_stats_list=arrays_stats_list,
             )
         except ValueError as exc:
-            raise exc  # there's been error during control of the input values and we can't push processing further
+            # there's been error during control of the input values
+            # and we can't push processing further
+            raise exc
 
         # create list with custom functions codes that will be converted to callables
         custom_functions: List[str] = []
@@ -425,33 +427,33 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         """
         # check if both raster and vector layers are set
         if not raster_layers_path or not vector_layer:
-            err_msg = f"You didn't select raster layer or vector layer"
+            err_msg = "You didn't select raster layer or vector layer"
             raise ValueError(err_msg)
         # check if ID field is set
         if not self.temp_index_field:
-            err_msg = f"You didn't select ID field"
+            err_msg = "You didn't select ID field"
             raise ValueError(err_msg)
         # check if ID field is unique
         # TODO: Checking uniqueness would require a looping over all features in the vector layer, which is slow and may take a lot of time
         # depending on size of the input dataset therefore it is omitted for now until we have a better solution
         # We might add a checkbox to let user decide wether we should check uniqueness (with given information that it might be slow operation)
         if not output_file_path:
-            err_msg = f"You didn't select output file path"
+            err_msg = "You didn't select output file path"
             raise ValueError(err_msg)
         # check if output file extension is CSV or Parquet
         if output_file_path.suffix != ".csv" and output_file_path.suffix != ".parquet":
-            err_msg = f"Allowed output formats are CSV (.csv) or Parquet (.parquet)"
+            err_msg = "Allowed output formats are CSV (.csv) or Parquet (.parquet)"
             raise ValueError(err_msg)
         else:
             if output_file_path.suffix == ".parquet":
                 try:
                     import fastparquet
                 except ImportError:
-                    err_msg = f"Parquet output format is supported only if fastparquet library is installed"
+                    err_msg = "Parquet output format is supported only if fastparquet library is installed"
                     raise ValueError(err_msg)
         # check if both stats lists are empty
         if not aggregates_stats_list and not arrays_stats_list:
-            err_msg = f"You didn't select anything from either Aggregates and Arrays"
+            err_msg = "You didn't select anything from either Aggregates and Arrays"
             raise ValueError(err_msg)
         # array output statistics are not proper for fastparquet
         # check if there are array output statistics to be calculated when using parquet as an output format
@@ -485,7 +487,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             function_name = self.mCustomFunctionsComboBox.checkedItems()[0]
             code = self.custom_functions_dict[function_name]
         except IndexError:  # no item selected or list is empty
-            code = default_code
+            code = DEFAULT_CODE
         # set editor to that code
         self.editor.set_code(code)
         self.editor.show()

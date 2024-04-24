@@ -9,15 +9,15 @@ from .user_communication import WidgetPlainTextWriter
 class CalculateStatsTask(QgsTask):
     def __init__(
         self,
-        description,
-        flags,
-        widget_console,
-        result_list,
-        polygon_layer,
-        rasters,
-        weights,
-        stats,
-        include_cols,
+        description: str,
+        flags: QgsTask.Flag,
+        widget_console: WidgetPlainTextWriter,
+        result_list: List,
+        polygon_layer: QgsVectorLayer,
+        rasters: List[str],
+        weights: List[str],
+        stats: List[str],
+        include_cols: List[str],
     ):
         super().__init__(description, flags)
         self.description = description
@@ -56,7 +56,13 @@ class CalculateStatsTask(QgsTask):
 
 class MergeStatsTask(QgsTask):
     def __init__(
-        self, description, flags, widget_console, result_list, index_column, prefix
+        self,
+        description: str,
+        flags: QgsTask.Flag,
+        widget_console: WidgetPlainTextWriter,
+        result_list: List,
+        index_column: str,
+        prefix: str,
     ):
         super().__init__(description, flags)
         self.description: str = description

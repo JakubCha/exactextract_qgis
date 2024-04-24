@@ -23,5 +23,10 @@
         "O4W_QT_TRANSLATIONS": "E:\\OSGeo4W\\apps\\Qt5\\translations",
         "QT_PLUGIN_PATH": "E:\\OSGeo4W\\apps\\qgis\\qtplugins;E:\\OSGeo4W\\apps\\qt5\\plugins",
         "QGIS_PREFIX_PATH": "E:\\OSGeo4W\\apps\\qgis",
-    }
+    },
+    "python.testing.pytestArgs": [
+        "zonal_exact"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true,
 }
