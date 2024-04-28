@@ -8,7 +8,9 @@
 
     begin            : 2015-12-30
     copyright        : (C) 2019 Radosław Pasiok for Lutra Consulting Ltd.
+                        2024: modified by Jakub Charyton
     email            : info@lutraconsulting.co.uk
+                        jakub.charyton@gmail.com
  ***************************************************************************/
 
 /***************************************************************************
