@@ -25,7 +25,8 @@
         "QGIS_PREFIX_PATH": "E:\\OSGeo4W\\apps\\qgis",
     },
     "python.testing.pytestArgs": [
-        "zonal_exact"
+        "zonal_exact",
+        "--qgis_disable_gui",
     ],
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,

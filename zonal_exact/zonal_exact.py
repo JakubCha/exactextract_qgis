@@ -163,7 +163,7 @@ class ZonalExact:
 
         return action
 
-    def initGui(self):
+    def initGui(self, add_to_menu=True):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
         icon_path = ":/plugins/zonal_exact/icons/exact_icon.svg"
@@ -172,6 +172,7 @@ class ZonalExact:
             text=self.tr("Zonal statistics (Exact Extract)"),
             callback=self.run,
             parent=self.iface.mainWindow(),
+            add_to_menu=add_to_menu,
         )
 
         # will be set False in run()
