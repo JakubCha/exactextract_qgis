@@ -10,6 +10,7 @@ class CalculateStatsTask(QgsTask):
     """
     A class representing a task to calculate statistics using the exact_extract function.
     """
+
     def __init__(
         self,
         description: str,
@@ -75,13 +76,16 @@ class CalculateStatsTask(QgsTask):
         Args:
             result (bool):  The result of the task. True if  the task was successful otherwise False.
         """
-        self.widget_console.write_info(f"Finished task: {self.description}, result: {"Successful" if result else "Failed"}")
+        self.widget_console.write_info(
+            f"Finished task: {self.description}, result: {'Successful' if result else 'Failed'}"
+        )
 
 
 class MergeStatsTask(QgsTask):
     """
     A custom QgsTask for merging statistics from a list of pandas DataFrames and optionally prefixing column names.
     """
+
     def __init__(
         self,
         description: str,
@@ -141,5 +145,5 @@ class MergeStatsTask(QgsTask):
             result (bool):  The result of the task. True if  the task was successful otherwise False.
         """
         self.widget_console.write_info(
-            f"Finished MergeStatsTask Task: {self.description}, result: {"Successful" if result else "Failed"}"
+            f"Finished MergeStatsTask Task: {self.description}, result: {'Successful' if result else 'Failed'}"
         )
