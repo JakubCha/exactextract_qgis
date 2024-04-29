@@ -1,2 +1,4 @@
+pre-commit
 ruff
+pytest
 pytest-qgis
