@@ -89,9 +89,8 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.temp_index_field = None
         self.input_vector = None
         self.features_count = None
-        self.custom_functions_dict: Dict[str, str] = (
-            {}
-        )  # it holds custom functions and should reflect mCustomFunctionsComboBox content
+        # it holds custom functions and should reflect mCustomFunctionsComboBox content
+        self.custom_functions_dict: Dict[str, str] = {}
         # assign qgis internal variables to class variables
         self.uc = uc
         self.iface = iface
