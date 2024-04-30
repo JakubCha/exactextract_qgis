@@ -3,7 +3,7 @@ import os
 import pytest
 from pathlib import Path
 
-from qgis.core import QgsProject, QgsApplication
+from qgis.core import QgsProject
 
 from zonal_exact.zonal_exact_dialog import ZonalExactDialog
 from zonal_exact.user_communication import UserCommunication

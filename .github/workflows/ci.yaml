@@ -27,8 +27,7 @@ jobs:
       - name: Run tests
         env:
           QGIS_IN_CI: 1
-        run: >
-          xvfb-run -s '+extension GLX -screen 0 1024x768x24'
+        run: |
           pytest -v --cov zonal_exact --qgis_disable_gui
 
   code-style:
