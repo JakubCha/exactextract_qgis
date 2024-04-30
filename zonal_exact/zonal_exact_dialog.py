@@ -366,9 +366,9 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
 
         # create list with custom functions codes that will be converted to callables
         custom_functions: List[str] = []
-        selected_functions_names: List[str] = (
-            self.mCustomFunctionsComboBox.checkedItems()
-        )
+        selected_functions_names: List[
+            str
+        ] = self.mCustomFunctionsComboBox.checkedItems()
         if selected_functions_names:
             for selected_function_name in selected_functions_names:
                 custom_functions.append(
@@ -446,7 +446,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         else:
             if output_file_path.suffix == ".parquet":
                 try:
-                    import fastparquet
+                    import fastparquet  # noqa: F401
                 except ImportError:
                     err_msg = "Parquet output format is supported only if fastparquet library is installed"
                     raise ValueError(err_msg)

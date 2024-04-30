@@ -29,7 +29,7 @@ from qgis.PyQt.QtWidgets import QAction
 from qgis.core import QgsProject, QgsApplication
 
 # Initialize Qt resources from file resources.py
-from .resources import *
+from .resources import *  # noqa: F403
 
 # Import the code for the dialog
 from .zonal_exact_dialog import ZonalExactDialog

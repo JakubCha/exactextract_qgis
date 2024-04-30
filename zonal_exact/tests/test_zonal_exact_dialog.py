@@ -63,7 +63,9 @@ def test_control_input_missing_raster_layer(dialog, setup_layers):
     aggregates_stats_list = ["mean"]
     arrays_stats_list = []
 
-    with pytest.raises(ValueError, match="You didn't select raster layer or vector layer"):
+    with pytest.raises(
+        ValueError, match="You didn't select raster layer or vector layer"
+    ):
         dialog.control_input(
             raster_layers_path,
             vector_layer,
@@ -82,7 +84,9 @@ def test_control_input_missing_vector_layer(dialog):
     aggregates_stats_list = ["mean"]
     arrays_stats_list = []
 
-    with pytest.raises(ValueError, match="You didn't select raster layer or vector layer"):
+    with pytest.raises(
+        ValueError, match="You didn't select raster layer or vector layer"
+    ):
         dialog.control_input(
             raster_layers_path,
             vector_layer,
