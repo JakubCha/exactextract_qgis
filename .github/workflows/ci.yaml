@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install dependencies
         run: |
-          python3 -m pip install -U pip setuptools
+          python3 -m pip install -U pip
           pip3 install -qr qgis_requirements.txt
           pip3 install -qr dev_requirements.txt
       - name: Run tests
