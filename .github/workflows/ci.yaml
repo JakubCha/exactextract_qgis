@@ -12,14 +12,16 @@ jobs:
       image: qgis/qgis:${{ matrix.qgis-tags }}
     strategy:
       matrix:
-        qgis-tags: [ release-3_28, release-3_34, latest ]
+        qgis-tags: [ release-3_34, latest ]
       fail-fast: false
 
     steps:
       - uses: actions/checkout@v4
-      - name: Install dependencies
+      - name: Update pip
         run: |
           python3 -m pip install -U pip
+      - name: Install dependencies
+        run: |
           pip3 install -qr qgis_requirements.txt
           pip3 install -qr dev_requirements.txt
       - name: Run tests

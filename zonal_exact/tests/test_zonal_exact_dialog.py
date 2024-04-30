@@ -1,3 +1,5 @@
+import sys
+import os
 import pytest
 from pathlib import Path
 
@@ -8,12 +10,12 @@ from zonal_exact.user_communication import UserCommunication
 
 
 @pytest.fixture
-def dialog(qgis_iface):
+def dialog(qgis_iface, qgis_app):
     # Create a ZonalExactDialog instance
     dialog = ZonalExactDialog(
         iface=qgis_iface,
         project=QgsProject.instance(),
-        task_manager=QgsApplication.taskManager(),
+        task_manager=qgis_app.taskManager(),
         uc=UserCommunication(qgis_iface, "Zonal ExactExtract"),
     )
     yield dialog
