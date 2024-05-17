@@ -10,12 +10,13 @@ from qgis.core import (
     QgsFeature,
     QgsField,
     QgsFields,
+    QgsProject,
 )
 from PyQt5.QtCore import QVariant
 
 
 @pytest.fixture(scope="function")
-def setup_layers(tmp_path) -> Tuple[QgsVectorLayer, QgsRasterLayer]:
+def setup_layers(tmp_path, qgis_new_project) -> Tuple[QgsVectorLayer, QgsRasterLayer]:
     """
     Set up vector and raster layers for testing.
 
@@ -82,5 +83,8 @@ def setup_layers(tmp_path) -> Tuple[QgsVectorLayer, QgsRasterLayer]:
     # Create a raster layer from the raster file
     raster_layer = QgsRasterLayer(raster_file, "raster_layer")
     raster_layer.setCrs(QgsCoordinateReferenceSystem("EPSG:3035"))
+
+    QgsProject.instance().addMapLayer(vector_layer)
+    QgsProject.instance().addMapLayer(raster_layer)
 
     return vector_layer, raster_layer

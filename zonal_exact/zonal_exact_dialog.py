@@ -404,11 +404,11 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def control_input(
         self,
-        raster_layers_path,
-        vector_layer,
-        output_file_path,
-        aggregates_stats_list,
-        arrays_stats_list,
+        raster_layers_path: Path,
+        vector_layer: QgsVectorLayer,
+        output_file_path: str,
+        aggregates_stats_list: List[str],
+        arrays_stats_list: List[str],
     ):
         """
         Processes the input data by checking the validity of the input parameters.
@@ -458,6 +458,12 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         # check if there are array output statistics to be calculated when using parquet as an output format
         if output_file_path.suffix == ".parquet" and arrays_stats_list:
             err_msg = f'Array stats: {",".join(arrays_stats_list)} are forbidden in conjuction with .parquet output format'
+            raise ValueError(err_msg)
+        # check if values in vector_layer temp_index_field are unique
+        id_idx = vector_layer.fields().indexOf(self.temp_index_field)
+        id_unique_values = vector_layer.uniqueValues(id_idx)
+        if len(id_unique_values) < vector_layer.featureCount():
+            err_msg = f"{self.temp_index_field} field values are not unique. Please select unique field as ID field."
             raise ValueError(err_msg)
 
     def set_field_vector_layer(self):

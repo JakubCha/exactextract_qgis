@@ -17,7 +17,7 @@ def dialog(qgis_iface, qgis_app):
         uc=UserCommunication(qgis_iface, "Zonal ExactExtract"),
     )
     yield dialog
-    dialog.close()
+    # dialog.close()
 
 
 def test_dialog_creation(dialog):
@@ -37,7 +37,7 @@ def test_control_input_valid_parameters(dialog, setup_layers):
     # Test if the control_input method processes valid parameters correctly
     vector_layer, _ = setup_layers
 
-    dialog.temp_index_field = "fid"
+    dialog.temp_index_field = "id"
     raster_layers_path = "/path/to/raster"
     output_file_path = Path("/path/to/output.csv")
     aggregates_stats_list = ["mean"]
@@ -57,7 +57,7 @@ def test_control_input_missing_raster_layer(dialog, setup_layers):
     # Test if the control_input method raises an exception when raster layer is missing
     vector_layer, _ = setup_layers
 
-    dialog.temp_index_field = "fid"
+    dialog.temp_index_field = "id"
     raster_layers_path = ""
     output_file_path = Path("/path/to/output.csv")
     aggregates_stats_list = ["mean"]
@@ -78,7 +78,7 @@ def test_control_input_missing_raster_layer(dialog, setup_layers):
 def test_control_input_missing_vector_layer(dialog):
     # Test if the control_input method raises an exception when vector layer is missing
     raster_layers_path = "/path/to/raster"
-    dialog.temp_index_field = "fid"
+    dialog.temp_index_field = "id"
     vector_layer = None
     output_file_path = Path("/path/to/output.csv")
     aggregates_stats_list = ["mean"]
@@ -99,7 +99,7 @@ def test_control_input_missing_vector_layer(dialog):
 def test_control_input_missing_id_field(dialog, setup_layers):
     # Test if the control_input method raises an exception when ID field is missing
     vector_layer, _ = setup_layers
-
+    dialog.temp_index_field = None
     raster_layers_path = "/path/to/raster"
     output_file_path = Path("/path/to/output.csv")
     aggregates_stats_list = ["mean"]
@@ -120,7 +120,7 @@ def test_control_input_missing_output_file_path(dialog, setup_layers):
     vector_layer, _ = setup_layers
 
     raster_layers_path = "/path/to/raster"
-    dialog.temp_index_field = "fid"
+    dialog.temp_index_field = "id"
     output_file_path = None
     aggregates_stats_list = ["mean"]
     arrays_stats_list = []
@@ -140,7 +140,7 @@ def test_control_input_invalid_output_file_extension(dialog, setup_layers):
     vector_layer, _ = setup_layers
 
     raster_layers_path = "/path/to/raster"
-    dialog.temp_index_field = "fid"
+    dialog.temp_index_field = "id"
     output_file_path = Path("/path/to/output.txt")
     aggregates_stats_list = ["mean"]
     arrays_stats_list = []
@@ -160,7 +160,7 @@ def test_control_input_missing_stats_lists(dialog, setup_layers):
     vector_layer, _ = setup_layers
 
     raster_layers_path = "/path/to/raster"
-    dialog.temp_index_field = "fid"
+    dialog.temp_index_field = "id"
     output_file_path = Path("/path/to/output.csv")
     aggregates_stats_list = []
     arrays_stats_list = []
@@ -182,7 +182,7 @@ def test_control_input_invalid_output_format_with_array_stats(dialog, setup_laye
     vector_layer, _ = setup_layers
 
     raster_layers_path = "/path/to/raster"
-    dialog.temp_index_field = "fid"
+    dialog.temp_index_field = "id"
     output_file_path = Path("/path/to/output.parquet")
     aggregates_stats_list = []
     arrays_stats_list = ["mean", "std"]
