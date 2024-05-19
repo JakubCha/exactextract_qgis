@@ -9,7 +9,7 @@
             "host": "localhost",
             "pathMappings": [
                 {
-                    "localRoot": "${workspaceFolder}",
+                    "localRoot": "${workspaceFolder}\\zonal_exact",
                     "remoteRoot": "C:\\Users\\Kuba_MASZYNA\\AppData\\Roaming\\QGIS\\QGIS3\\profiles\\default\\python\\plugins\\zonal_exact"
                 }
             ]

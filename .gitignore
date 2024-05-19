@@ -1,6 +1,8 @@
 *.pyc
 .pyc
-__pycache_/
-/__pycache__
-/highlighter/__pycache_
+zonal_exact/__pycache__/
+zonal_exact/.pytest_cache
+zonal_exact/widgets/__pycache__
+zonal_exact/widgets/highlighter/__pycache__
 symbology-style.db
+.converage

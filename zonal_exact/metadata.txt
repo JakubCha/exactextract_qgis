@@ -1,0 +1,57 @@
+# This file contains metadata for your plugin.
+
+# This file should be included when you package your plugin.# Mandatory items:
+
+[general]
+name=Zonal Exact Extract
+qgisMinimumVersion=3.30
+description=Zonal Statistics of rasters using Exact Extract library
+version=0.43
+author=Jakub Charyton
+email=jakub.charyton@gmail.com
+
+about=Zonal Statistics using ExactExtract library. This plugin requires pandas and exactextract libraries installed in python. 
+    You can read more about plugin and installation requirements in plugin repository / homepage.
+
+    This library allows to treat pixel cells as partially covered by polygons using weighting according to the extent of cover. If you want to know more about the library working in the backend of this plugin it's highly recommend to visit its github repository.
+    The geoprocessesing tool "Zonal statistics" currently implemented in QGIS have an issues that yield wrong results in certain situations. Exactextract can remedy it.
+    
+    Features:
+    --------
+    -Multiple supported statistics: Every statistic given by exactextract is supported by plugin (statistics), including array result type (usage of these statistics might slow down calculation and saving stage) and weighted statistics (statistics with weighted_ name).
+    -Define own, custom functions : Write custom Python code to define extra, additional features for raster zonal statistics. Custom functions should accept raster values and coverage attributes.
+    -Usage of QGIS parallel engine: There is an option to process statistics calculation in multiple parts (subtasks/batch option). Calculation of statistics in this case is done in parallel manner using QgsTaskManager engine. To configure number of parallel cores it will use you should configure Max Threads option in QGIS settings.
+    -Support multiple values rasters: Selection of multiple rasters will process each raster separately and append to the result.
+    -Support multiband rasters: In case there's a multiband raster - each band is processed during calculations and is output as separate set of columns.
+    -Support weights raster
+
+tracker=https://github.com/JakubCha/exactextract_qgis/issues
+repository=https://github.com/JakubCha/exactextract_qgis
+# End of mandatory metadata
+
+# Recommended items:
+
+hasProcessingProvider=no
+# Uncomment the following line and add your changelog:
+# changelog=
+
+# Tags are comma separated with spaces allowed
+tags=raster, vector, zonal, statistics, exact, extract, python
+
+homepage=https://github.com/JakubCha/exactextract_qgis
+category=Raster
+icon=icons/exact_icon.svg
+# experimental flag
+experimental=True
+
+# deprecated flag (applies to the whole plugin, not just a single version)
+deprecated=False
+
+# Since QGIS 3.8, a comma separated list of plugins to be installed
+# (or upgraded) can be specified.
+# Check the documentation for more information.
+# plugin_dependencies=
+
+# If the plugin can run on QGIS Server.
+server=False
+

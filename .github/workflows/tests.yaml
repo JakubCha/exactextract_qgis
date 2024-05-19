@@ -1,0 +1,33 @@
+name: tests
+
+on: [pull_request, push]
+
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    container:
+      image: qgis/qgis:${{ matrix.qgis-tags }}
+    strategy:
+      matrix:
+        qgis-tags: [3.34, 3.36, latest]
+      fail-fast: false
+
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Install qgis dependencies
+        run: |
+          pip3 install -qr qgis_requirements.txt --break-system-packages
+      - name: Install dev dependencies
+        run: |
+          pip3 install -qr dev_requirements.txt --break-system-packages
+      
+      - name: Run tests
+        run: |
+          pytest -v --qgis_disable_gui
+        env:
+          QT_QPA_PLATFORM: offscreen
+          QGIS_PLUGIN_IN_CI: 1
+          QGIS_PLUGIN_TOOLS_IN_CI: 1
+  
