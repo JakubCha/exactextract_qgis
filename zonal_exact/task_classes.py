@@ -46,6 +46,8 @@ class CalculateStatsTask(QgsTask):
 
         self.result_list: List[pd.DataFrame] = result_list
 
+        self.completed_succesfully = False
+
     def run(self):
         """
         Run the task and calculate the statistics using exactextract
@@ -67,6 +69,7 @@ class CalculateStatsTask(QgsTask):
         )
         self.result_list.append(result_stats)
 
+        self.completed_succesfully = True
         return True
 
     def finished(self, result: bool):
@@ -111,6 +114,7 @@ class MergeStatsTask(QgsTask):
         self.index_column: str = index_column
         self.prefix: str = prefix
 
+        self.completed_succesfully = False
         self.calculated_stats: pd.DataFrame = None
 
     def run(self):
@@ -134,7 +138,7 @@ class MergeStatsTask(QgsTask):
             calculated_stats = calculated_stats.rename(columns=rename_dict)
 
         self.calculated_stats = calculated_stats
-
+        self.completed_succesfully = True
         return True
 
     def finished(self, result: bool):

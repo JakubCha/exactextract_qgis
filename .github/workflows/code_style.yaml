@@ -1,9 +1,6 @@
 name: code style
 
-on:
-  pull_request:
-  push:
-    branches: [ repo_refactor ]
+on: [pull_request push]
 
 jobs:
   code-style:

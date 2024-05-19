@@ -1,9 +1,6 @@
 name: tests
 
-on:
-  pull_request:
-  push:
-    branches: [ repo_refactor ]
+on: [pull_request push]
 
 jobs:
   tests:
@@ -12,7 +9,7 @@ jobs:
       image: qgis/qgis:${{ matrix.qgis-tags }}
     strategy:
       matrix:
-        qgis-tags: [3.34, 3.36]
+        qgis-tags: [3.34, 3.36, latest]
       fail-fast: false
 
     steps:

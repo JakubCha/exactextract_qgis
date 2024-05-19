@@ -39,6 +39,7 @@ from qgis.core import (
     QgsRasterLayer,
     QgsMapLayer,
     QgsWkbTypes,
+    QgsProject,
 )
 
 from .dialog_input_dto import DialogInputDTO
@@ -61,15 +62,28 @@ def np_mean(values, cov):
 
 
 class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
+    """
+    A dialog window for performing zonal statistics calculations using exactextract in QGIS.
+    """
+
     def __init__(
         self,
         parent=None,
         uc: UserCommunication = None,
         iface=None,
-        project=None,
+        project: QgsProject = None,
         task_manager: QgsTaskManager = None,
     ):
-        """Constructor."""
+        """
+        Initialize the ZonalExactDialog class.
+
+        Args:
+            parent: The parent widget (default: None).
+            uc: An instance of the UserCommunication class (default: None).
+            iface: The QGIS interface (default: None).
+            project: The QGIS project (default: None).
+            task_manager: An instance of the QgsTaskManager class (default: None).
+        """
         super(ZonalExactDialog, self).__init__(parent)
         # Set up the user interface from Designer through FORM_CLASS.
         # After self.setupUi() you can access any designer object by doing
