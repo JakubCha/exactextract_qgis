@@ -56,14 +56,6 @@ There is also option to modify custom functions defined by user earlier. In orde
 #### Output
 - Attribute layer - CSV format is supported by default and Parquet format is supported if `fastparquet` library is installed.
 
-## Current version
-It's **beta** version of the plugin. It  is not recommended for production usage yet! 
-
-It will be out of **beta** when:
-- unit and integration tests are added;
-- features are considered  completed;
-- documentation is provided with the plugin;
-
 ## Installation
 
 In current version of the plugin there are 4 packages required:
