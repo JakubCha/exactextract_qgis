@@ -47,23 +47,23 @@ def init_merge_stats_task(setup_stats_dfs):
     task = MergeStatsTask(
         "Merge statistics",
         QgsTask.CanCancel,
-        console,
         result_list,
         "id",
         "pytest_",
     )
+    task.taskChanged.connect(console.write_info)
 
-    return task
+    return task, console
 
 
 def test_task_init(init_merge_stats_task):
-    task = init_merge_stats_task
+    task, _ = init_merge_stats_task
 
     assert task.description == "Merge statistics"
 
 
 def test_task_run(init_merge_stats_task):
-    task = init_merge_stats_task
+    task, _ = init_merge_stats_task
     result = task.run()
 
     # Check if the task ran successfully and variables are set correctly
@@ -89,14 +89,14 @@ def test_task_run(init_merge_stats_task):
 
 
 def test_task_console_output(init_merge_stats_task):
-    task = init_merge_stats_task
+    task, console = init_merge_stats_task
     task.run()
     # Simulate task finished with success and failure
     task.finished(True)
     task.finished(False)
 
     # Check if the console output is correct
-    console_output = task.widget_console.plain_text_widget.toPlainText().split("\n")
+    console_output = console.plain_text_widget.toPlainText().split("\n")
     assert console_output[0] == "[INFO]: Inside MergeStatsTask Task: Merge statistics"
     assert (
         console_output[1]
