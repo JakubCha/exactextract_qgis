@@ -3,7 +3,7 @@ from exactextract import exact_extract
 import pandas as pd
 
 from qgis.core import QgsTask, QgsMessageLog, QgsVectorLayer
-from .user_communication import WidgetPlainTextWriter
+from PyQt5.QtCore import pyqtSignal
 
 
 class CalculateStatsTask(QgsTask):
@@ -11,11 +11,12 @@ class CalculateStatsTask(QgsTask):
     A class representing a task to calculate statistics using the exact_extract function.
     """
 
+    taskChanged = pyqtSignal(str)
+
     def __init__(
         self,
         description: str,
         flags: QgsTask.Flag,
-        widget_console: WidgetPlainTextWriter,
         result_list: List,
         polygon_layer: QgsVectorLayer,
         rasters: List[str],
@@ -27,7 +28,6 @@ class CalculateStatsTask(QgsTask):
         Attributes:
         description (str): The description of the task.
         flags (QgsTask.Flag): The flags for the task.
-        widget_console (WidgetPlainTextWriter): The console to write task progress.
         result_list (List[str]): The list to store the results of the task.
         polygon_layer (QgsVectorLayer): The polygon layer to perform the statistics on.
         rasters (List[str]): The list of raster files to use in the statistics.
@@ -37,7 +37,6 @@ class CalculateStatsTask(QgsTask):
         """
         super().__init__(description, flags)
         self.description = description
-        self.widget_console: WidgetPlainTextWriter = widget_console
         self.polygon_layer: QgsVectorLayer = polygon_layer
         self.rasters: List[str] = rasters
         self.weights: List[str] = weights
@@ -52,12 +51,9 @@ class CalculateStatsTask(QgsTask):
         """
         Run the task and calculate the statistics using exactextract
         """
-        QgsMessageLog.logMessage(
-            f"Started task: {self.description} with {self.polygon_layer.featureCount()} polygons"
-        )
-        self.widget_console.write_info(
-            f"Started task: {self.description} with {self.polygon_layer.featureCount()} polygons"
-        )
+        message = f"Started task: {self.description} with {self.polygon_layer.featureCount()} polygons"
+        QgsMessageLog.logMessage(message)
+        self.taskChanged.emit(message)
 
         def task_progress_update(frac: float, message: str):
             self.setProgress(frac * 100)
@@ -83,9 +79,8 @@ class CalculateStatsTask(QgsTask):
         Args:
             result (bool):  The result of the task. True if  the task was successful otherwise False.
         """
-        self.widget_console.write_info(
-            f"Finished task: {self.description}, result: {'Successful' if result else 'Failed'}"
-        )
+        message = f"Finished task: {self.description}, result: {'Successful' if result else 'Failed'}"
+        self.taskChanged.emit(message)
 
 
 class MergeStatsTask(QgsTask):
@@ -93,11 +88,12 @@ class MergeStatsTask(QgsTask):
     A custom QgsTask for merging statistics from a list of pandas DataFrames and optionally prefixing column names.
     """
 
+    taskChanged = pyqtSignal(str)
+
     def __init__(
         self,
         description: str,
         flags: QgsTask.Flag,
-        widget_console: WidgetPlainTextWriter,
         result_list: List,
         index_column: str,
         prefix: str,
@@ -106,14 +102,12 @@ class MergeStatsTask(QgsTask):
         Attributes:
             description (str): A description of the task.
             flags (QgsTask.Flag): Flags indicating the task's behavior.
-            widget_console (WidgetPlainTextWriter): A widget for writing console output.
             result_list (List[pd.DataFrame]): A list of pandas DataFrames containing the statistics to be merged.
             index_column (str): The name of the index column.
             prefix (str): A prefix string to be added to the column names.
         """
         super().__init__(description, flags)
         self.description: str = description
-        self.widget_console: WidgetPlainTextWriter = widget_console
         self.result_list: List[pd.DataFrame] = result_list
         self.index_column: str = index_column
         self.prefix: str = prefix
@@ -125,10 +119,9 @@ class MergeStatsTask(QgsTask):
         """
         Merges all dataframes in the list into one dataframe and adds prefix to column names if necessary.
         """
-        QgsMessageLog.logMessage(f"Inside MergeStatsTask Task: {self.description}")
-        self.widget_console.write_info(
-            f"Inside MergeStatsTask Task: {self.description}"
-        )
+        message = f"Inside MergeStatsTask Task: {self.description}"
+        QgsMessageLog.logMessage(message)
+        self.taskChanged.emit(message)
 
         calculated_stats = pd.concat(self.result_list)
 
@@ -152,6 +145,5 @@ class MergeStatsTask(QgsTask):
         Args:
             result (bool):  The result of the task. True if  the task was successful otherwise False.
         """
-        self.widget_console.write_info(
-            f"Finished MergeStatsTask Task: {self.description}, result: {'Successful' if result else 'Failed'}"
-        )
+        message = f"Finished MergeStatsTask Task: {self.description}, result: {'Successful' if result else 'Failed'}"
+        self.taskChanged.emit(message)

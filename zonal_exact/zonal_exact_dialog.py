@@ -193,11 +193,11 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.merge_task = MergeStatsTask(
             "Zonal ExactExtract task",
             QgsTask.CanCancel,
-            widget_console=self.widget_console,
             result_list=self.intermediate_result_list,
             index_column=self.temp_index_field,
             prefix=self.dialog_input.prefix,
         )
+        self.merge_task.taskChanged.connect(self.widget_console.write_info)
         self.merge_task.taskCompleted.connect(self.update_progress_bar)
 
         self.tasks = []
@@ -242,13 +242,13 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                 f"calculation subtask {i}",
                 flags=QgsTask.Silent,
                 result_list=self.intermediate_result_list,
-                widget_console=self.widget_console,
                 polygon_layer=temp_vector,
                 rasters=self.dialog_input.raster_layers_path,
                 weights=self.dialog_input.weights_layer_path,
                 stats=stats_list,
                 include_cols=[self.temp_index_field],
             )
+            calculation_subtask.taskChanged.connect(self.widget_console.write_info)
             calculation_subtask.taskCompleted.connect(self.update_progress_bar)
             self.tasks.append(calculation_subtask)
             self.merge_task.addSubTask(
@@ -265,12 +265,11 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         """
         try:
             calculated_stats = self.merge_task.calculated_stats
-            QgsMessageLog.logMessage(
+            message = (
                 f"Zonal ExactExtract task result shape: {str(calculated_stats.shape)}"
             )
-            self.widget_console.write_info(
-                f"Zonal ExactExtract task result shape: {str(calculated_stats.shape)}"
-            )
+            QgsMessageLog.logMessage(message)
+            self.widget_console.write_info(message)
 
             # save result based on user decided extension
             if self.dialog_input.output_file_path.suffix == ".csv":
@@ -288,12 +287,11 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             )
             # check if the layer was loaded successfully
             if not output_attribute_layer.isValid():
-                QgsMessageLog.logMessage(
+                message = (
                     f"Unable to load layer from {self.dialog_input.output_file_path}"
                 )
-                self.widget_console.write_error(
-                    f"Unable to load layer from {self.dialog_input.output_file_path}"
-                )
+                QgsMessageLog.logMessage(message)
+                self.widget_console.write_error(message)
             else:
                 self.widget_console.write_info("Finished calculating statistics")
                 # Add the layer to the project
@@ -321,8 +319,9 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         joinObject.setTargetFieldName(self.temp_index_field)
         joinObject.setUsingMemoryCache(True)
         if not self.input_vector.addJoin(joinObject):
-            QgsMessageLog.logMessage("Can't join output to input layer")
-            self.widget_console.write_error("Can't join output to input layer")
+            message = "Can't join output to input layer"
+            QgsMessageLog.logMessage(message)
+            self.widget_console.write_error(message)
 
     def update_progress_bar(self):
         """
