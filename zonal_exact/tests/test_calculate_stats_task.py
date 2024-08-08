@@ -21,7 +21,6 @@ def init_calculate_stats_task(setup_layers):
     task = CalculateStatsTask(
         "Test Task",
         QgsTask.CanCancel,
-        console,
         [],
         vector_layer,
         [raster_layer_path],
@@ -29,18 +28,19 @@ def init_calculate_stats_task(setup_layers):
         stats_to_calculate,
         ["id"],
     )
+    task.taskChanged.connect(console.write_info)
 
-    return task
+    return task, console
 
 
 def test_task_init(init_calculate_stats_task):
-    task = init_calculate_stats_task
+    task, _ = init_calculate_stats_task
 
     assert task.description == "Test Task"
 
 
 def test_task_run(init_calculate_stats_task):
-    task = init_calculate_stats_task
+    task, _ = init_calculate_stats_task
     result = task.run()
 
     # Check if the task ran successfully and variables are set correctly
@@ -49,21 +49,21 @@ def test_task_run(init_calculate_stats_task):
 
 
 def test_task_console_output(init_calculate_stats_task):
-    task = init_calculate_stats_task
+    task, console = init_calculate_stats_task
     task.run()
     # Simulate task finished with success and failure
     task.finished(True)
     task.finished(False)
 
     # Check if the console output is correct
-    console_output = task.widget_console.plain_text_widget.toPlainText().split("\n")
+    console_output = console.plain_text_widget.toPlainText().split("\n")
     assert console_output[0] == "[INFO]: Started task: Test Task with 12 polygons"
     assert console_output[1] == "[INFO]: Finished task: Test Task, result: Successful"
     assert console_output[2] == "[INFO]: Finished task: Test Task, result: Failed"
 
 
 def test_task_calculation(init_calculate_stats_task):
-    task = init_calculate_stats_task
+    task, _ = init_calculate_stats_task
     task.run()
 
     # Check for correctness of the output statistics
@@ -76,7 +76,7 @@ def test_task_calculation(init_calculate_stats_task):
 
 
 def test_task_single_nodata_pixel_polygon(init_calculate_stats_task):
-    task = init_calculate_stats_task
+    task, _ = init_calculate_stats_task
     task.run()
 
     result_df = task.result_list[0]
@@ -91,7 +91,7 @@ def test_task_single_nodata_pixel_polygon(init_calculate_stats_task):
 
 
 def test_task_single_pixel_polygon(init_calculate_stats_task):
-    task = init_calculate_stats_task
+    task, _ = init_calculate_stats_task
     task.run()
 
     result_df = task.result_list[0]
@@ -112,7 +112,7 @@ def test_task_single_pixel_polygon(init_calculate_stats_task):
 
 
 def test_task_single_big_polygon(init_calculate_stats_task):
-    task = init_calculate_stats_task
+    task, _ = init_calculate_stats_task
     task.run()
 
     result_df = task.result_list[0]
@@ -127,7 +127,7 @@ def test_task_single_big_polygon(init_calculate_stats_task):
 
 
 def test_task_single_polygon_outside_raster(init_calculate_stats_task):
-    task = init_calculate_stats_task
+    task, _ = init_calculate_stats_task
     task.run()
 
     result_df = task.result_list[0]
