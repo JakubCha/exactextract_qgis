@@ -57,7 +57,7 @@ class CalculateStatsTask(QgsTask):
 
         def task_progress_update(frac: float, message: str):
             self.setProgress(frac * 100)
-        
+
         result_stats = exact_extract(
             vec=self.polygon_layer,
             rast=self.rasters,
