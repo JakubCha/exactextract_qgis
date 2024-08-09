@@ -198,11 +198,11 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             prefix=self.dialog_input.prefix,
         )
         self.merge_task.taskChanged.connect(self.widget_console.write_info)
-        self.merge_task.taskCompleted.connect(self.update_progress_bar)
+        self.merge_task.progressChanged.connect(self.update_progress_bar)
 
         self.tasks = []
 
-        vector.selectAll()
+        vector.selectAll()  # workaround to get all features IDs
         feature_ids = vector.selectedFeatureIds()
         vector.removeSelection()
         for i in range(0, self.features_count, batch_size):
@@ -249,7 +249,6 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                 include_cols=[self.temp_index_field],
             )
             calculation_subtask.taskChanged.connect(self.widget_console.write_info)
-            calculation_subtask.taskCompleted.connect(self.update_progress_bar)
             self.tasks.append(calculation_subtask)
             self.merge_task.addSubTask(
                 calculation_subtask, [], QgsTask.ParentDependsOnSubTask
@@ -325,10 +324,9 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
 
     def update_progress_bar(self):
         """
-        Calculate progress change as percentage of total tasks completed + parent task
+        Updates the progress bar using progress values from parent (MergeStatsTask) task
         """
-        progress_change = int((1 / (len(self.tasks) + 1)) * 100)
-        self.mProgressBar.setValue(self.mProgressBar.value() + progress_change)
+        self.mProgressBar.setValue(self.merge_task.progress())
 
     def clean(self):
         """
