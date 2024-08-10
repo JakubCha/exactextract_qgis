@@ -38,8 +38,8 @@ from qgis.core import (
     QgsVectorLayerJoinInfo,
     QgsRasterLayer,
     QgsMapLayer,
-    QgsWkbTypes,
     QgsProject,
+    QgsFeatureRequest,
 )
 
 from .dialog_input_dto import DialogInputDTO
@@ -205,28 +205,9 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         feature_ids = vector.allFeatureIds()
         for i in range(0, self.features_count, batch_size):
             selection_ids = feature_ids[i : i + batch_size]
-            vector.selectByIds(selection_ids)
-
-            # Create a new memory layer with the same geometry type and fields structure as the source layer
-            crs = vector.crs()
-            fields = vector.fields()
-            geom_type = vector.geometryType()
-            temp_vector = QgsVectorLayer(
-                QgsWkbTypes.geometryDisplayString(geom_type)
-                + "?crs="
-                + crs.authid()
-                + "&index=yes",
-                "Memory layer",
-                "memory",
+            temp_vector = vector.materialize(
+                QgsFeatureRequest().setFilterFids(selection_ids)
             )
-            memoryLayerDataProvider = temp_vector.dataProvider()
-            # copy the table structure
-            temp_vector.startEditing()
-            memoryLayerDataProvider.addAttributes(fields)
-            temp_vector.commitChanges()
-            # Add selected features to the new memory layer
-            memoryLayerDataProvider.addFeatures(vector.selectedFeatures())
-            # temp_vector = vector.materialize(QgsFeatureRequest().setFilterFids(vector.selectedFeatureIds()))
 
             stats_list = (
                 self.dialog_input.aggregates_stats_list
