@@ -47,18 +47,19 @@ There is also option to modify custom functions defined by user earlier. In orde
 
 ### Features to be added
 - Move all heavy operations to QGIS ``QgsTask``;
-- Ability to output geospatial layer instead of CSV/Parquet only - It might be difficult due to lack of performant way to join `GeoDataFrame` to `QgsVectorLayer`;
+- Ability to output geospatial layer instead of CSV/Parquet only;
 
-#### Input
+## Data
+### Input
 - Polygon layer (anything that is read by QGIS)
 - Raster layer (it has to be locally accessible layer. Database raster layers do not work for now)
 
-#### Output
+### Output
 - Attribute layer - CSV format is supported by default and Parquet format is supported if `fastparquet` library is installed.
 
 ## Installation
 
-In current version of the plugin there are 4 packages required:
+In current version of the plugin there are 2 packages required and 1 optional package:
 - [**REQUIRED**] Installed through OSGeo4W setup utility (or `pip install pandas`):
   - pandas
 - [**REQUIRED**] From PyPi repository: `pip install exactextract`

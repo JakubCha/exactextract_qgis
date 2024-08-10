@@ -288,7 +288,9 @@ def test_process_calculations_single_task(tmp_path, dialog, setup_layers):
         if elapsed_time >= max_wait_time:
             raise TimeoutError("Maximum wait time exceeded")
     dialog.merge_task.run()
-    calculated_stats = dialog.merge_task.calculated_stats
+    calculated_stats = dialog.merge_task.calculated_stats.sort_values(
+        by="id", ascending=True
+    )
 
     assert len(dialog.intermediate_result_list) == 1  # Only one task was run
     assert list(calculated_stats.columns) == [
@@ -304,11 +306,11 @@ def test_process_calculations_single_task(tmp_path, dialog, setup_layers):
         3,
         4,
         5,
-        15,
-        14,
-        13,
-        12,
         11,
+        12,
+        13,
+        14,
+        15,
         20,
     ]
     assert calculated_stats[
@@ -321,11 +323,11 @@ def test_process_calculations_single_task(tmp_path, dialog, setup_layers):
             4.0,
             3.0,
             2.0,
-            np.nan,
-            6.0,
-            7.0,
-            8.0,
             9.0,
+            8.0,
+            7.0,
+            6.0,
+            np.nan,
             6.460000038146973,
         ],
         nan_ok=True,
@@ -340,11 +342,11 @@ def test_process_calculations_single_task(tmp_path, dialog, setup_layers):
             6.0,
             5.0,
             4.0,
-            np.nan,
-            8.0,
-            9.0,
-            10.0,
             11.0,
+            10.0,
+            9.0,
+            8.0,
+            np.nan,
             8.460000038146973,
         ],
         nan_ok=True,
@@ -402,34 +404,34 @@ def test_process_calculations_multiple_tasks(tmp_path, dialog, setup_layers):
 
     expected_df = pd.DataFrame(
         {
-            "id": [20, 0, 2, 1, 4, 3, 15, 5, 13, 14, 11, 12],
+            "id": [0, 1, 2, 3, 4, 5, 11, 12, 13, 14, 15, 20],
             "prefixpytest_raster_band_1_mean": [
-                6.46,
                 np.nan,
+                6.0,
                 5.0,
-                6.0,
-                3.0,
                 4.0,
-                np.nan,
+                3.0,
                 2.0,
-                7.0,
-                6.0,
                 9.0,
                 8.0,
+                7.0,
+                6.0,
+                np.nan,
+                6.46,
             ],
             "prefixpytest_raster_band_2_mean": [
-                8.46,
                 np.nan,
+                8.0,
                 7.0,
-                8.0,
-                5.0,
                 6.0,
-                np.nan,
+                5.0,
                 4.0,
-                9.0,
-                8.0,
                 11.0,
                 10.0,
+                9.0,
+                8.0,
+                np.nan,
+                8.46,
             ],
         }
     )
