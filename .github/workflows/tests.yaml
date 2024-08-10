@@ -18,10 +18,10 @@ jobs:
 
       - name: Install qgis dependencies
         run: |
-          pip3 install -qr qgis_requirements.txt --break-system-packages
+          pip3 install -qr zonal_exact/python_requirements/qgis_requirements.txt --break-system-packages
       - name: Install dev dependencies
         run: |
-          pip3 install -qr dev_requirements.txt --break-system-packages
+          pip3 install -qr zonal_exact/python_requirements/dev_requirements.txt --break-system-packages
       
       - name: Run tests
         run: |

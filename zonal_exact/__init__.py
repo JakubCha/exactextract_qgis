@@ -32,6 +32,12 @@ def classFactory(iface):  # pylint: disable=invalid-name
     :type iface: QgsInterface
     """
 
+    from .packages_installer import packages_installer_dialog
+
+    packages_installer_dialog.check_required_packages_and_install_if_necessary(
+        iface=iface
+    )
+
     from .zonal_exact import ZonalExact
 
     return ZonalExact(iface)

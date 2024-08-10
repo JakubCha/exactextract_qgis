@@ -379,9 +379,9 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
 
         # create list with custom functions codes that will be converted to callables
         custom_functions: List[str] = []
-        selected_functions_names: List[
-            str
-        ] = self.mCustomFunctionsComboBox.checkedItems()
+        selected_functions_names: List[str] = (
+            self.mCustomFunctionsComboBox.checkedItems()
+        )
         if selected_functions_names:
             for selected_function_name in selected_functions_names:
                 custom_functions.append(
