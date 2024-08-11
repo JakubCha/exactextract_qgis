@@ -116,6 +116,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.editor.setWindowTitle("Custom Function Code Editor")
 
         self.setupUi(self)
+        self.mRasterLayersList.setup(self.project)
 
         self.set_id_field()
 

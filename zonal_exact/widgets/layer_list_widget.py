@@ -18,8 +18,17 @@ class MultiRasterLayerSelectionWidget(QtWidgets.QListWidget):
             parent: The parent widget.
         """
         super().__init__()
-        self.project = parent.project
+        self.project = None
         self.previously_selected: List[str] = []
+    
+    def setup(self, project):
+        """
+        Sets up the widget with the project variable. It should be called after the widget is created.
+
+        Args:
+            project: The current project.
+        """
+        self.project = project
         layer_tree = self.project.layerTreeRoot()
 
         # Connect to signals for layer tree change events
