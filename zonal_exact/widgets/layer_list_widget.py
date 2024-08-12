@@ -20,7 +20,7 @@ class MultiRasterLayerSelectionWidget(QtWidgets.QListWidget):
         super().__init__()
         self.project = None
         self.previously_selected: List[str] = []
-    
+
     def setup(self, project):
         """
         Sets up the widget with the project variable. It should be called after the widget is created.
