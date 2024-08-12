@@ -53,6 +53,7 @@ In order to permanently add calculated columns to input vector, it should be sav
 <br />
 
 ## Statistics
+Description of statistics possible to use in tool is available in `exactextract` library [repository](https://github.com/isciences/exactextract/tree/master?tab=readme-ov-file#supported-statistics)
 <br />
 
 
