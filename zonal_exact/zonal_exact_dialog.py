@@ -117,6 +117,8 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
 
         self.setupUi(self)
         self.mRasterLayersList.setup(self.project)
+        self.helpTextBrowser.setSearchPaths([os.path.dirname(__file__)])
+        self.helpTextBrowser.setSource(QtCore.QUrl("help.md"))
 
         self.set_id_field()
 
