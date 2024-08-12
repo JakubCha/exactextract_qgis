@@ -4,5 +4,6 @@ zonal_exact/__pycache__/
 zonal_exact/.pytest_cache
 zonal_exact/widgets/__pycache__
 zonal_exact/widgets/highlighter/__pycache__
+zonal_exact/packages_installer/__pycache__
 symbology-style.db
 .converage
