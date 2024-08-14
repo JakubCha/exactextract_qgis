@@ -40,6 +40,7 @@ from qgis.core import (
     QgsMapLayer,
     QgsProject,
     QgsFeatureRequest,
+    QgsVectorFileWriter,
 )
 
 from .dialog_input_dto import DialogInputDTO
@@ -103,6 +104,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.temp_index_field = None
         self.input_vector = None
         self.features_count = None
+        self.geospatial_output = False
         # it holds custom functions and should reflect mCustomFunctionsComboBox content
         self.custom_functions_dict: Dict[str, str] = {}
         # assign qgis internal variables to class variables
@@ -139,8 +141,6 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         if self.mFieldComboBox.currentField():
             self.temp_index_field = self.mFieldComboBox.currentField()
         self.mFieldComboBox.fieldChanged.connect(self.set_id_field)
-        # set output file allowed extensions
-        self.mQgsOutputFileWidget.setFilter("Documents (*.csv *.parquet)")
         # make weights layer empty as default
         self.mWeightsLayerComboBox.setCurrentIndex(0)
 
@@ -173,6 +173,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             # wait for calculations to finish to continue
             if self.merge_task is not None:
                 self.merge_task.taskCompleted.connect(self.postprocess)
+                self.merge_task.taskTerminated.connect(self.postprocess)
         except ValueError as exc:
             QgsMessageLog.logMessage(f"ERROR: {str(exc)}")
             self.uc.bar_warn(str(exc))
@@ -200,6 +201,8 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             result_list=self.intermediate_result_list,
             index_column=self.temp_index_field,
             prefix=self.dialog_input.prefix,
+            geospatial_output=self.geospatial_output,
+            output_file_path=self.dialog_input.output_file_path,
         )
         self.merge_task.taskChanged.connect(self.widget_console.write_info)
         self.merge_task.taskCompleted.connect(self.update_progress_bar)
@@ -227,6 +230,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                 weights=self.dialog_input.weights_layer_path,
                 stats=stats_list,
                 include_cols=[self.temp_index_field],
+                geospatial_output=self.geospatial_output,
             )
             calculation_subtask.taskChanged.connect(self.widget_console.write_info)
             calculation_subtask.taskCompleted.connect(self.update_progress_bar)
@@ -244,20 +248,21 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         output to the input vector layer if necessary.
         """
         try:
-            calculated_stats = self.merge_task.calculated_stats
-            message = (
-                f"Zonal ExactExtract task result shape: {str(calculated_stats.shape)}"
-            )
-            QgsMessageLog.logMessage(message)
-            self.widget_console.write_info(message)
-
-            # save result based on user decided extension
-            if self.dialog_input.output_file_path.suffix == ".csv":
-                calculated_stats.to_csv(self.dialog_input.output_file_path, index=False)
-            elif self.dialog_input.output_file_path.suffix == ".parquet":
-                calculated_stats.to_parquet(
-                    self.dialog_input.output_file_path, index=False
+            if not self.geospatial_output:
+                calculated_stats = self.merge_task.calculated_stats
+                message = (
+                    f"Zonal ExactExtract task result shape: {str(calculated_stats.shape)}"
                 )
+                QgsMessageLog.logMessage(message)
+                self.widget_console.write_info(message)
+
+                # save result based on user decided extension
+                if self.dialog_input.output_file_path.suffix == ".csv":
+                    calculated_stats.to_csv(self.dialog_input.output_file_path, index=False)
+                elif self.dialog_input.output_file_path.suffix == ".parquet":
+                    calculated_stats.to_parquet(
+                        self.dialog_input.output_file_path, index=False
+                    )
 
             # load output into QGIS
             output_attribute_layer = QgsVectorLayer(
@@ -433,11 +438,16 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             err_msg = "You didn't select output file path"
             raise ValueError(err_msg)
         # check if output file extension is CSV or Parquet
-        if output_file_path.suffix != ".csv" and output_file_path.suffix != ".parquet":
-            err_msg = "Allowed output formats are CSV (.csv) or Parquet (.parquet)"
-            raise ValueError(err_msg)
+        output_file_path_suffix = output_file_path.suffix.strip(".")
+        if output_file_path_suffix != "csv" and output_file_path_suffix != "parquet":
+            # check if extension is in OGR allowed extensions
+            if output_file_path_suffix not in QgsVectorFileWriter.supportedFormatExtensions():
+                err_msg = f"Output file extension {output_file_path_suffix} is not supported"
+                raise ValueError(err_msg)
+            else:
+                self.geospatial_output = True
         else:
-            if output_file_path.suffix == ".parquet":
+            if output_file_path_suffix == "parquet":
                 try:
                     import fastparquet  # noqa: F401
                 except ImportError:
@@ -449,7 +459,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             raise ValueError(err_msg)
         # array output statistics are not proper for fastparquet
         # check if there are array output statistics to be calculated when using parquet as an output format
-        if output_file_path.suffix == ".parquet" and arrays_stats_list:
+        if output_file_path_suffix == "parquet" and arrays_stats_list:
             err_msg = f'Array stats: {",".join(arrays_stats_list)} are forbidden in conjuction with .parquet output format'
             raise ValueError(err_msg)
         # check if values in vector_layer temp_index_field are unique
