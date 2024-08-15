@@ -55,7 +55,9 @@ There is also option to modify custom functions defined by user earlier. In orde
 - Raster layer (it has to be locally accessible layer. Database raster layers do not work for now)
 
 ### Output
-- Attribute layer - CSV format is supported by default and Parquet format is supported if `fastparquet` library is installed.
+- Geospatial layer - Geospatial formats are supported with every OGR supported driver. 
+> **warning:** Support for array output may vary. Use with caution.
+- Attribute layer - CSV format
 
 ## Installation
 
@@ -63,4 +65,3 @@ In current version of the plugin there are 2 packages required and 1 optional pa
 - [**REQUIRED**] Installed through OSGeo4W setup utility (or `pip install pandas`):
   - pandas
 - [**REQUIRED**] From PyPi repository: `pip install exactextract`
-- [**OPTIONAL**] It's advised to install `fastparquet` (`pip install fastparquet`) to allow saving  results as a parquet file format;
