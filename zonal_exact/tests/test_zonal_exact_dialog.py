@@ -150,11 +150,11 @@ def test_control_input_invalid_output_file_extension(dialog, setup_layers):
 
     raster_layers_path = "/path/to/raster"
     dialog.temp_index_field = "id"
-    output_file_path = Path("/path/to/output.txt")
+    output_file_path = Path("/path/to/output.abc")
     aggregates_stats_list = ["mean"]
     arrays_stats_list = []
 
-    with pytest.raises(ValueError, match="Allowed output formats are *"):
+    with pytest.raises(ValueError, match="Output file extension *"):
         dialog.control_input(
             raster_layers_path,
             vector_layer,
@@ -270,6 +270,7 @@ def test_process_calculations_single_task(tmp_path, dialog, setup_layers):
     )
 
     dialog.temp_index_field = "id"
+    dialog.input_attributes_dict = {dialog.temp_index_field: 0}
     dialog.widget_console = WidgetPlainTextWriter(plain_text_widget=QPlainTextEdit())
     dialog.features_count = vector_layer.featureCount()
 
@@ -372,6 +373,7 @@ def test_process_calculations_multiple_tasks(tmp_path, dialog, setup_layers):
     )
 
     dialog.temp_index_field = "id"
+    dialog.input_attributes_dict = {dialog.temp_index_field: 0}
     dialog.widget_console = WidgetPlainTextWriter(plain_text_widget=QPlainTextEdit())
     dialog.features_count = vector_layer.featureCount()
 

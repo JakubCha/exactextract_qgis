@@ -253,15 +253,15 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         try:
             if not self.geospatial_output:
                 calculated_stats = self.merge_task.calculated_stats
-                message = (
-                    f"Zonal ExactExtract task result shape: {str(calculated_stats.shape)}"
-                )
+                message = f"Zonal ExactExtract task result shape: {str(calculated_stats.shape)}"
                 QgsMessageLog.logMessage(message)
                 self.widget_console.write_info(message)
 
                 # save result based on user decided extension
                 if self.dialog_input.output_file_path.suffix == ".csv":
-                    calculated_stats.to_csv(self.dialog_input.output_file_path, index=False)
+                    calculated_stats.to_csv(
+                        self.dialog_input.output_file_path, index=False
+                    )
                 elif self.dialog_input.output_file_path.suffix == ".parquet":
                     calculated_stats.to_parquet(
                         self.dialog_input.output_file_path, index=False
@@ -444,15 +444,22 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         output_file_path_suffix = output_file_path.suffix.strip(".")
         if output_file_path_suffix != "csv" and output_file_path_suffix != "parquet":
             # check if extension is in OGR allowed extensions
-            if output_file_path_suffix not in QgsVectorFileWriter.supportedFormatExtensions():
-                err_msg = f"Output file extension {output_file_path_suffix} is not supported"
+            if (
+                output_file_path_suffix
+                not in QgsVectorFileWriter.supportedFormatExtensions()
+            ):
+                err_msg = (
+                    f"Output file extension {output_file_path_suffix} is not supported"
+                )
                 raise ValueError(err_msg)
             else:
                 self.geospatial_output = True
                 fields = vector_layer.fields()
-                self.input_attributes_dict = {name: fields.indexFromName(name) for name in fields.names()}
+                self.input_attributes_dict = {
+                    name: fields.indexFromName(name) for name in fields.names()
+                }
         else:
-            self.input_attributes_dict = {0: self.temp_index_field}
+            self.input_attributes_dict = {self.temp_index_field: 0}
             if output_file_path_suffix == "parquet":
                 try:
                     import fastparquet  # noqa: F401

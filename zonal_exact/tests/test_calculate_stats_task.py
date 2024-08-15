@@ -27,6 +27,7 @@ def init_calculate_stats_task(setup_layers):
         None,  # No weights
         stats_to_calculate,
         ["id"],
+        geospatial_output=False,
     )
     task.taskChanged.connect(console.write_info)
 

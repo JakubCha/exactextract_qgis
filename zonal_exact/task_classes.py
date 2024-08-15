@@ -3,7 +3,12 @@ from typing import List, Dict, Union
 from exactextract import exact_extract
 import pandas as pd
 
-from qgis.core import QgsTask, QgsMessageLog, QgsVectorLayer, QgsCoordinateReferenceSystem
+from qgis.core import (
+    QgsTask,
+    QgsMessageLog,
+    QgsVectorLayer,
+    QgsCoordinateReferenceSystem,
+)
 import processing
 from PyQt5.QtCore import pyqtSignal
 
@@ -154,12 +159,17 @@ class MergeStatsTask(QgsTask):
                     vector_fields = vector_layer.fields()
                     for column in vector_fields:
                         if column.name() not in list(self.source_columns.keys()):
-                            vector_layer.renameAttribute(vector_fields.indexFromName(column.name()), f"{self.prefix}{column.name()}")
+                            vector_layer.renameAttribute(
+                                vector_fields.indexFromName(column.name()),
+                                f"{self.prefix}{column.name()}",
+                            )
                     vector_layer.commitChanges()
             # merge all vectors in a list
-            parameters = {'LAYERS': self.result_list,
-                        'CRS': self.source_crs,
-                        'OUTPUT': str(self.output_file_path)}
+            parameters = {
+                "LAYERS": self.result_list,
+                "CRS": self.source_crs,
+                "OUTPUT": str(self.output_file_path),
+            }
             processing.run("qgis:mergevectorlayers", parameters)
         else:
             calculated_stats = pd.concat(self.result_list)
@@ -174,7 +184,7 @@ class MergeStatsTask(QgsTask):
                 calculated_stats = calculated_stats.rename(columns=rename_dict)
 
             self.calculated_stats = calculated_stats
-        
+
         self.completed_succesfully = True
         return True
 

@@ -39,17 +39,21 @@ def setup_stats_dfs():
 
 
 @pytest.fixture
-def init_merge_stats_task(setup_stats_dfs):
+def init_merge_stats_task(setup_stats_dfs, tmp_path):
     stats_df1, stats_df2, stats_df3 = setup_stats_dfs
     result_list = [stats_df1, stats_df2, stats_df3]
     # Create a console writer
     console = WidgetPlainTextWriter(plain_text_widget=QPlainTextEdit())
     task = MergeStatsTask(
-        "Merge statistics",
-        QgsTask.CanCancel,
-        result_list,
-        "id",
-        "pytest_",
+        description="Merge statistics",
+        flags=QgsTask.CanCancel,
+        result_list=result_list,
+        index_column="id",
+        prefix="pytest_",
+        geospatial_output=False,
+        output_file_path=r'tmp_path\merged_stats.csv',
+        source_columns={'id': 0},
+        source_crs=None,
     )
     task.taskChanged.connect(console.write_info)
 
