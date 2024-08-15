@@ -105,6 +105,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.input_vector = None
         self.features_count = None
         self.geospatial_output = False
+        self.input_attributes_dict = {}
         # it holds custom functions and should reflect mCustomFunctionsComboBox content
         self.custom_functions_dict: Dict[str, str] = {}
         # assign qgis internal variables to class variables
@@ -203,6 +204,8 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             prefix=self.dialog_input.prefix,
             geospatial_output=self.geospatial_output,
             output_file_path=self.dialog_input.output_file_path,
+            source_columns=self.input_attributes_dict,
+            source_crs=vector.crs(),
         )
         self.merge_task.taskChanged.connect(self.widget_console.write_info)
         self.merge_task.taskCompleted.connect(self.update_progress_bar)
@@ -229,7 +232,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                 rasters=self.dialog_input.raster_layers_path,
                 weights=self.dialog_input.weights_layer_path,
                 stats=stats_list,
-                include_cols=[self.temp_index_field],
+                include_cols=self.input_attributes_dict,
                 geospatial_output=self.geospatial_output,
             )
             calculation_subtask.taskChanged.connect(self.widget_console.write_info)
@@ -446,7 +449,10 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                 raise ValueError(err_msg)
             else:
                 self.geospatial_output = True
+                fields = vector_layer.fields()
+                self.input_attributes_dict = {name: fields.indexFromName(name) for name in fields.names()}
         else:
+            self.input_attributes_dict = {0: self.temp_index_field}
             if output_file_path_suffix == "parquet":
                 try:
                     import fastparquet  # noqa: F401

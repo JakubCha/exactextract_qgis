@@ -1,9 +1,9 @@
 from pathlib import Path
-from typing import List
+from typing import List, Dict, Union
 from exactextract import exact_extract
 import pandas as pd
 
-from qgis.core import QgsTask, QgsMessageLog, QgsVectorLayer
+from qgis.core import QgsTask, QgsMessageLog, QgsVectorLayer, QgsCoordinateReferenceSystem
 import processing
 from PyQt5.QtCore import pyqtSignal
 
@@ -24,7 +24,7 @@ class CalculateStatsTask(QgsTask):
         rasters: List[str],
         weights: List[str],
         stats: List[str],
-        include_cols: List[str],
+        include_cols: Dict[str, int],
         geospatial_output: bool,
     ):
         """
@@ -36,7 +36,7 @@ class CalculateStatsTask(QgsTask):
         rasters (List[str]): The list of raster files to use in the statistics.
         weights (List[str]): The list of weights to use in the statistics.
         stats (List[str]): The list of statistics to calculate.
-        include_cols (List[str]): The list of columns to include in the output.
+        include_cols (Dict[str, int]): The dict of column_name: column_id. Column names are to be included in the output.
         geo_spatial_output (bool): A boolean indicating whether to include the geometry in the output and use QGIS writer in exactextract.
         """
         super().__init__(description, flags)
@@ -45,8 +45,8 @@ class CalculateStatsTask(QgsTask):
         self.rasters: List[str] = rasters
         self.weights: List[str] = weights
         self.stats: List[str] = stats
-        self.include_cols: List[str] = include_cols
-        self.geo_spatial_output: bool = geospatial_output
+        self.include_cols: Dict[str, int] = include_cols
+        self.geospatial_output: bool = geospatial_output
 
         self.result_list: List[pd.DataFrame] = result_list
 
@@ -60,13 +60,13 @@ class CalculateStatsTask(QgsTask):
         QgsMessageLog.logMessage(message)
         self.taskChanged.emit(message)
 
-        if self.geo_spatial_output:
+        if self.geospatial_output:
             result_stats = exact_extract(
                 vec=self.polygon_layer,
                 rast=self.rasters,
                 weights=self.weights,
                 ops=self.stats,
-                include_cols=self.include_cols,
+                include_cols=list(self.include_cols.keys()),
                 include_geom=True,
                 output="qgis",
             )
@@ -76,7 +76,7 @@ class CalculateStatsTask(QgsTask):
                 rast=self.rasters,
                 weights=self.weights,
                 ops=self.stats,
-                include_cols=self.include_cols,  # TODO: add include_cols to exact_extract in case of geospatial output
+                include_cols=self.include_cols,
                 include_geom=False,
                 output="pandas",
             )
@@ -107,11 +107,13 @@ class MergeStatsTask(QgsTask):
         self,
         description: str,
         flags: QgsTask.Flag,
-        result_list: List,
+        result_list: List[Union[pd.DataFrame, QgsVectorLayer]],
         index_column: str,
         prefix: str,
         geospatial_output: bool,
         output_file_path: Path,
+        source_columns: Dict[str, int],
+        source_crs: str,
     ):
         """
         Attributes:
@@ -124,11 +126,13 @@ class MergeStatsTask(QgsTask):
         """
         super().__init__(description, flags)
         self.description: str = description
-        self.result_list: List[pd.DataFrame] = result_list
+        self.result_list: List[Union[pd.DataFrame, QgsVectorLayer]] = result_list
         self.index_column: str = index_column
         self.prefix: str = prefix
         self.geospatial_output: bool = geospatial_output
         self.output_file_path: Path = output_file_path
+        self.source_columns: Dict[str, int] = source_columns
+        self.source_crs: str = source_crs
 
         self.completed_succesfully = False
         self.calculated_stats: pd.DataFrame = None
@@ -144,10 +148,19 @@ class MergeStatsTask(QgsTask):
         if self.geospatial_output:
             # rename calculated columns to include prefix string
             # TODO: add prefix to column names
+            if len(self.prefix) > 0:
+                for vector_layer in self.result_list:
+                    vector_layer.startEditing()
+                    vector_fields = vector_layer.fields()
+                    for column in vector_fields:
+                        if column.name() not in list(self.source_columns.keys()):
+                            vector_layer.renameAttribute(vector_fields.indexFromName(column.name()), f"{self.prefix}{column.name()}")
+                    vector_layer.commitChanges()
             # merge all vectors in a list
-            parameters = {'LAYERS': self.result_list, 
+            parameters = {'LAYERS': self.result_list,
+                        'CRS': self.source_crs,
                         'OUTPUT': str(self.output_file_path)}
-            processing.run("qgis:mergevectorlayers", parameters) 
+            processing.run("qgis:mergevectorlayers", parameters)
         else:
             calculated_stats = pd.concat(self.result_list)
 
