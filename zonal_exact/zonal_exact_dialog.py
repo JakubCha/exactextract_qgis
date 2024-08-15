@@ -262,10 +262,6 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                     calculated_stats.to_csv(
                         self.dialog_input.output_file_path, index=False
                     )
-                elif self.dialog_input.output_file_path.suffix == ".parquet":
-                    calculated_stats.to_parquet(
-                        self.dialog_input.output_file_path, index=False
-                    )
 
             # load output into QGIS
             output_attribute_layer = QgsVectorLayer(
@@ -415,7 +411,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         Processes the input data by checking the validity of the input parameters.
 
         This method checks if both raster and vector layers are set, if the ID field is set, if the ID field is unique, if an output
-        file path is selected, if the output file extension is CSV or Parquet, and if both stats lists are empty.
+        file path is selected, if the output file extension is CSV, and if both stats lists are empty.
 
         Args:
             raster_layers_path: Path - The path to the raster layer.
@@ -440,9 +436,9 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         if not output_file_path:
             err_msg = "You didn't select output file path"
             raise ValueError(err_msg)
-        # check if output file extension is CSV or Parquet
+        # check if output file extension is CSV
         output_file_path_suffix = output_file_path.suffix.strip(".")
-        if output_file_path_suffix != "csv" and output_file_path_suffix != "parquet":
+        if output_file_path_suffix != "csv":
             # check if extension is in OGR allowed extensions
             if (
                 output_file_path_suffix
@@ -459,21 +455,11 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                     name: fields.indexFromName(name) for name in fields.names()
                 }
         else:
+            self.geospatial_output = False
             self.input_attributes_dict = {self.temp_index_field: 0}
-            if output_file_path_suffix == "parquet":
-                try:
-                    import fastparquet  # noqa: F401
-                except ImportError:
-                    err_msg = "Parquet output format is supported only if fastparquet library is installed"
-                    raise ValueError(err_msg)
         # check if both stats lists are empty
         if not aggregates_stats_list and not arrays_stats_list:
             err_msg = "You didn't select anything from either Aggregates and Arrays"
-            raise ValueError(err_msg)
-        # array output statistics are not proper for fastparquet
-        # check if there are array output statistics to be calculated when using parquet as an output format
-        if output_file_path_suffix == "parquet" and arrays_stats_list:
-            err_msg = f'Array stats: {",".join(arrays_stats_list)} are forbidden in conjuction with .parquet output format'
             raise ValueError(err_msg)
         # check if values in vector_layer temp_index_field are unique
         id_idx = vector_layer.fields().indexOf(self.temp_index_field)

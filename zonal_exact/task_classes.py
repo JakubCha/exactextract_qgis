@@ -7,9 +7,8 @@ from qgis.core import (
     QgsTask,
     QgsMessageLog,
     QgsVectorLayer,
-    QgsCoordinateReferenceSystem,
 )
-import processing
+from qgis import processing
 from PyQt5.QtCore import pyqtSignal
 
 

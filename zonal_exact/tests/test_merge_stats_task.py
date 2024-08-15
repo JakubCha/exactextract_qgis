@@ -51,8 +51,8 @@ def init_merge_stats_task(setup_stats_dfs, tmp_path):
         index_column="id",
         prefix="pytest_",
         geospatial_output=False,
-        output_file_path=r'tmp_path\merged_stats.csv',
-        source_columns={'id': 0},
+        output_file_path=rf"{tmp_path}\merged_stats.csv",
+        source_columns={"id": 0},
         source_crs=None,
     )
     task.taskChanged.connect(console.write_info)
