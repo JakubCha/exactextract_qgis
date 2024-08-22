@@ -262,12 +262,22 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                         self.dialog_input.output_file_path, index=False
                     )
 
-            # load output into QGIS
+            # load output into QgsVectorLayer
             output_attribute_layer = QgsVectorLayer(
                 str(self.dialog_input.output_file_path),
                 Path(self.dialog_input.output_file_path).stem,
                 "ogr",
             )
+            
+            total_fields = len(output_attribute_layer.fields())
+            if output_attribute_layer.fields().at(total_fields - 1).name() == 'path' and \
+            output_attribute_layer.fields().at(total_fields - 2).name() == 'layer':
+                output_attribute_layer.startEditing()
+                # Delete the last two fields
+                output_attribute_layer.deleteAttribute(total_fields - 1)  # delete path field
+                output_attribute_layer.deleteAttribute(total_fields - 2)  # delete layer field
+                output_attribute_layer.commitChanges()
+            
             # check if the layer was loaded successfully
             if not output_attribute_layer.isValid():
                 message = (
