@@ -35,11 +35,11 @@ from qgis.core import (
     QgsTaskManager,
     QgsMessageLog,
     QgsVectorLayer,
-    QgsVectorLayerJoinInfo,
     QgsRasterLayer,
     QgsMapLayer,
-    QgsWkbTypes,
     QgsProject,
+    QgsFeatureRequest,
+    QgsVectorFileWriter,
 )
 
 from .dialog_input_dto import DialogInputDTO
@@ -103,6 +103,8 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.temp_index_field = None
         self.input_vector = None
         self.features_count = None
+        self.geospatial_output = False
+        self.input_attributes_dict = {}
         # it holds custom functions and should reflect mCustomFunctionsComboBox content
         self.custom_functions_dict: Dict[str, str] = {}
         # assign qgis internal variables to class variables
@@ -116,6 +118,10 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.editor.setWindowTitle("Custom Function Code Editor")
 
         self.setupUi(self)
+        self.mRasterLayersList.setup(self.project)
+        self.helpTextBrowser.setSearchPaths([os.path.dirname(__file__)])
+        self.helpTextBrowser.setSource(QtCore.QUrl("help.md"))
+        self.helpTextBrowser.setOpenExternalLinks(True)
 
         self.set_id_field()
 
@@ -135,8 +141,6 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         if self.mFieldComboBox.currentField():
             self.temp_index_field = self.mFieldComboBox.currentField()
         self.mFieldComboBox.fieldChanged.connect(self.set_id_field)
-        # set output file allowed extensions
-        self.mQgsOutputFileWidget.setFilter("Documents (*.csv *.parquet)")
         # make weights layer empty as default
         self.mWeightsLayerComboBox.setCurrentIndex(0)
 
@@ -169,6 +173,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             # wait for calculations to finish to continue
             if self.merge_task is not None:
                 self.merge_task.taskCompleted.connect(self.postprocess)
+                self.merge_task.taskTerminated.connect(self.postprocess)
         except ValueError as exc:
             QgsMessageLog.logMessage(f"ERROR: {str(exc)}")
             self.uc.bar_warn(str(exc))
@@ -196,42 +201,22 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             result_list=self.intermediate_result_list,
             index_column=self.temp_index_field,
             prefix=self.dialog_input.prefix,
+            geospatial_output=self.geospatial_output,
+            output_file_path=self.dialog_input.output_file_path,
+            source_columns=self.input_attributes_dict,
+            source_crs=vector.crs(),
         )
         self.merge_task.taskChanged.connect(self.widget_console.write_info)
         self.merge_task.progressChanged.connect(self.update_progress_bar)
 
         self.tasks = []
 
-        vector.selectAll()  # workaround to get all features IDs
-        feature_ids = vector.selectedFeatureIds()
-        vector.removeSelection()
+        feature_ids = vector.allFeatureIds()
         for i in range(0, self.features_count, batch_size):
-            if self.dialog_input.parallel_jobs == 1:
-                temp_vector = vector
-            else:
-                selection_ids = feature_ids[i : i + batch_size]
-                vector.selectByIds(selection_ids)
-
-                # Create a new memory layer with the same geometry type and fields structure as the source layer
-                crs = vector.crs()
-                fields = vector.fields()
-                geom_type = vector.geometryType()
-                temp_vector = QgsVectorLayer(
-                    QgsWkbTypes.geometryDisplayString(geom_type)
-                    + "?crs="
-                    + crs.authid()
-                    + "&index=yes",
-                    "Memory layer",
-                    "memory",
-                )
-                memoryLayerDataProvider = temp_vector.dataProvider()
-                # copy the table structure
-                temp_vector.startEditing()
-                memoryLayerDataProvider.addAttributes(fields)
-                temp_vector.commitChanges()
-                # Add selected features to the new memory layer
-                memoryLayerDataProvider.addFeatures(vector.selectedFeatures())
-                # temp_vector = vector.materialize(QgsFeatureRequest().setFilterFids(vector.selectedFeatureIds()))
+            selection_ids = feature_ids[i : i + batch_size]
+            temp_vector = vector.materialize(
+                QgsFeatureRequest().setFilterFids(selection_ids)
+            )
 
             stats_list = (
                 self.dialog_input.aggregates_stats_list
@@ -246,7 +231,8 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                 rasters=self.dialog_input.raster_layers_path,
                 weights=self.dialog_input.weights_layer_path,
                 stats=stats_list,
-                include_cols=[self.temp_index_field],
+                include_cols=self.input_attributes_dict,
+                geospatial_output=self.geospatial_output,
             )
             calculation_subtask.taskChanged.connect(self.widget_console.write_info)
             self.tasks.append(calculation_subtask)
@@ -263,27 +249,34 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         output to the input vector layer if necessary.
         """
         try:
-            calculated_stats = self.merge_task.calculated_stats
-            message = (
-                f"Zonal ExactExtract task result shape: {str(calculated_stats.shape)}"
-            )
-            QgsMessageLog.logMessage(message)
-            self.widget_console.write_info(message)
+            if not self.geospatial_output:
+                calculated_stats = self.merge_task.calculated_stats
+                message = f"Zonal ExactExtract task result shape: {str(calculated_stats.shape)}"
+                QgsMessageLog.logMessage(message)
+                self.widget_console.write_info(message)
 
-            # save result based on user decided extension
-            if self.dialog_input.output_file_path.suffix == ".csv":
-                calculated_stats.to_csv(self.dialog_input.output_file_path, index=False)
-            elif self.dialog_input.output_file_path.suffix == ".parquet":
-                calculated_stats.to_parquet(
-                    self.dialog_input.output_file_path, index=False
-                )
+                # save result based on user decided extension
+                if self.dialog_input.output_file_path.suffix == ".csv":
+                    calculated_stats.to_csv(
+                        self.dialog_input.output_file_path, index=False
+                    )
 
-            # load output into QGIS
+            # load output into QgsVectorLayer
             output_attribute_layer = QgsVectorLayer(
                 str(self.dialog_input.output_file_path),
                 Path(self.dialog_input.output_file_path).stem,
                 "ogr",
             )
+            
+            total_fields = len(output_attribute_layer.fields())
+            if output_attribute_layer.fields().at(total_fields - 1).name() == 'path' and \
+            output_attribute_layer.fields().at(total_fields - 2).name() == 'layer':
+                output_attribute_layer.startEditing()
+                # Delete the last two fields
+                output_attribute_layer.deleteAttribute(total_fields - 1)  # delete path field
+                output_attribute_layer.deleteAttribute(total_fields - 2)  # delete layer field
+                output_attribute_layer.commitChanges()
+            
             # check if the layer was loaded successfully
             if not output_attribute_layer.isValid():
                 message = (
@@ -297,30 +290,11 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.project.addMapLayer(output_attribute_layer)
                 self.output_attribute_layer = output_attribute_layer
 
-                if self.mJoinCheckBox.isChecked():
-                    self.create_join()
-
         except Exception as exc:
             QgsMessageLog.logMessage(f"ERROR: {exc}")
             self.widget_console.write_error(exc)
         finally:
             self.clean()
-            self.mCalculateButton.setEnabled(True)
-
-    def create_join(self):
-        """
-        This method creates a join between the output attribute layer and the input vector layer based on a
-        common index field. It is called after the output attribute layer has been loaded into QGIS.
-        """
-        joinObject = QgsVectorLayerJoinInfo()
-        joinObject.setJoinLayer(self.output_attribute_layer)
-        joinObject.setJoinFieldName(self.temp_index_field)
-        joinObject.setTargetFieldName(self.temp_index_field)
-        joinObject.setUsingMemoryCache(True)
-        if not self.input_vector.addJoin(joinObject):
-            message = "Can't join output to input layer"
-            QgsMessageLog.logMessage(message)
-            self.widget_console.write_error(message)
 
     def update_progress_bar(self):
         """
@@ -337,6 +311,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.intermediate_result_list = []
         self.merge_task: MergeStatsTask = None
         self.calculated_stats_list = []
+        self.mCalculateButton.setEnabled(True)
 
         self.mProgressBar.setValue(0)
 
@@ -425,7 +400,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         Processes the input data by checking the validity of the input parameters.
 
         This method checks if both raster and vector layers are set, if the ID field is set, if the ID field is unique, if an output
-        file path is selected, if the output file extension is CSV or Parquet, and if both stats lists are empty.
+        file path is selected, if the output file extension is CSV, and if both stats lists are empty.
 
         Args:
             raster_layers_path: Path - The path to the raster layer.
@@ -439,42 +414,44 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         if not raster_layers_path or not vector_layer:
             err_msg = "You didn't select raster layer or vector layer"
             raise ValueError(err_msg)
-        # check if ID field is set
-        if not self.temp_index_field:
-            err_msg = "You didn't select ID field"
-            raise ValueError(err_msg)
-        # check if ID field is unique
-        # TODO: Checking uniqueness would require a looping over all features in the vector layer, which is slow and may take a lot of time
-        # depending on size of the input dataset therefore it is omitted for now until we have a better solution
-        # We might add a checkbox to let user decide wether we should check uniqueness (with given information that it might be slow operation)
         if not output_file_path:
             err_msg = "You didn't select output file path"
             raise ValueError(err_msg)
-        # check if output file extension is CSV or Parquet
-        if output_file_path.suffix != ".csv" and output_file_path.suffix != ".parquet":
-            err_msg = "Allowed output formats are CSV (.csv) or Parquet (.parquet)"
-            raise ValueError(err_msg)
+        # check if output file extension is CSV
+        output_file_path_suffix = output_file_path.suffix.strip(".")
+        if output_file_path_suffix != "csv":
+            # check if extension is in OGR allowed extensions
+            if (
+                output_file_path_suffix
+                not in QgsVectorFileWriter.supportedFormatExtensions()
+            ):
+                err_msg = (
+                    f"Output file extension {output_file_path_suffix} is not supported"
+                )
+                raise ValueError(err_msg)
+            else:
+                self.geospatial_output = True
+                fields = vector_layer.fields()
+                self.input_attributes_dict = {
+                    name: fields.indexFromName(name) for name in fields.names()
+                }
         else:
-            if output_file_path.suffix == ".parquet":
-                try:
-                    import fastparquet  # noqa: F401
-                except ImportError:
-                    err_msg = "Parquet output format is supported only if fastparquet library is installed"
-                    raise ValueError(err_msg)
+            self.geospatial_output = False
+            self.input_attributes_dict = {self.temp_index_field: 0}
+        # check if ID field is set if output is not geospatial
+        if (not self.temp_index_field or self.temp_index_field == '') and (not self.geospatial_output):
+            err_msg = "You didn't select ID field"
+            raise ValueError(err_msg)
+        if self.temp_index_field and not self.geospatial_output:
+            # check if values in vector_layer temp_index_field are unique
+            id_idx = vector_layer.fields().indexOf(self.temp_index_field)
+            id_unique_values = vector_layer.uniqueValues(id_idx)
+            if len(id_unique_values) < vector_layer.featureCount():
+                err_msg = f"{self.temp_index_field} field values are not unique. Please select unique field as ID field."
+                raise ValueError(err_msg)
         # check if both stats lists are empty
         if not aggregates_stats_list and not arrays_stats_list:
             err_msg = "You didn't select anything from either Aggregates and Arrays"
-            raise ValueError(err_msg)
-        # array output statistics are not proper for fastparquet
-        # check if there are array output statistics to be calculated when using parquet as an output format
-        if output_file_path.suffix == ".parquet" and arrays_stats_list:
-            err_msg = f'Array stats: {",".join(arrays_stats_list)} are forbidden in conjuction with .parquet output format'
-            raise ValueError(err_msg)
-        # check if values in vector_layer temp_index_field are unique
-        id_idx = vector_layer.fields().indexOf(self.temp_index_field)
-        id_unique_values = vector_layer.uniqueValues(id_idx)
-        if len(id_unique_values) < vector_layer.featureCount():
-            err_msg = f"{self.temp_index_field} field values are not unique. Please select unique field as ID field."
             raise ValueError(err_msg)
 
     def set_field_vector_layer(self):
