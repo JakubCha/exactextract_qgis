@@ -56,12 +56,13 @@ There is also option to modify custom functions defined by user earlier. In orde
 
 ### Output
 - Geospatial layer - Geospatial formats are supported with every OGR supported driver. 
-> **warning:** Support for array output may vary. Use with caution.
+> **Warning:** Support for array output may vary. Use with caution.
 - Attribute layer - CSV format
 
 ## Installation
 
 In current version of the plugin there are 2 packages required and 1 optional package:
-- [**REQUIRED**] Installed through OSGeo4W setup utility (or `pip install pandas`):
-  - pandas
 - [**REQUIRED**] From PyPi repository: `pip install exactextract`
+- [**OPTIONAL**] Installed through OSGeo4W setup utility (or `pip install pandas`):
+  - pandas
+	>**Note:** pandas is required only if user wants to export result to CSV (non-geospatial output)

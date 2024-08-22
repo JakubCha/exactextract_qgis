@@ -35,7 +35,6 @@ from qgis.core import (
     QgsTaskManager,
     QgsMessageLog,
     QgsVectorLayer,
-    QgsVectorLayerJoinInfo,
     QgsRasterLayer,
     QgsMapLayer,
     QgsProject,
@@ -282,30 +281,11 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                 self.project.addMapLayer(output_attribute_layer)
                 self.output_attribute_layer = output_attribute_layer
 
-                if self.mJoinCheckBox.isChecked():
-                    self.create_join()
-
         except Exception as exc:
             QgsMessageLog.logMessage(f"ERROR: {exc}")
             self.widget_console.write_error(exc)
         finally:
             self.clean()
-            self.mCalculateButton.setEnabled(True)
-
-    def create_join(self):
-        """
-        This method creates a join between the output attribute layer and the input vector layer based on a
-        common index field. It is called after the output attribute layer has been loaded into QGIS.
-        """
-        joinObject = QgsVectorLayerJoinInfo()
-        joinObject.setJoinLayer(self.output_attribute_layer)
-        joinObject.setJoinFieldName(self.temp_index_field)
-        joinObject.setTargetFieldName(self.temp_index_field)
-        joinObject.setUsingMemoryCache(True)
-        if not self.input_vector.addJoin(joinObject):
-            message = "Can't join output to input layer"
-            QgsMessageLog.logMessage(message)
-            self.widget_console.write_error(message)
 
     def update_progress_bar(self):
         """
@@ -323,6 +303,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.intermediate_result_list = []
         self.merge_task: MergeStatsTask = None
         self.calculated_stats_list = []
+        self.mCalculateButton.setEnabled(True)
 
         self.mProgressBar.setValue(0)
 
@@ -425,14 +406,6 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         if not raster_layers_path or not vector_layer:
             err_msg = "You didn't select raster layer or vector layer"
             raise ValueError(err_msg)
-        # check if ID field is set
-        if not self.temp_index_field:
-            err_msg = "You didn't select ID field"
-            raise ValueError(err_msg)
-        # check if ID field is unique
-        # TODO: Checking uniqueness would require a looping over all features in the vector layer, which is slow and may take a lot of time
-        # depending on size of the input dataset therefore it is omitted for now until we have a better solution
-        # We might add a checkbox to let user decide wether we should check uniqueness (with given information that it might be slow operation)
         if not output_file_path:
             err_msg = "You didn't select output file path"
             raise ValueError(err_msg)
@@ -457,15 +430,20 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         else:
             self.geospatial_output = False
             self.input_attributes_dict = {self.temp_index_field: 0}
+        # check if ID field is set if output is not geospatial
+        if (not self.temp_index_field or self.temp_index_field == '') and (not self.geospatial_output):
+            err_msg = "You didn't select ID field"
+            raise ValueError(err_msg)
+        if self.temp_index_field and not self.geospatial_output:
+            # check if values in vector_layer temp_index_field are unique
+            id_idx = vector_layer.fields().indexOf(self.temp_index_field)
+            id_unique_values = vector_layer.uniqueValues(id_idx)
+            if len(id_unique_values) < vector_layer.featureCount():
+                err_msg = f"{self.temp_index_field} field values are not unique. Please select unique field as ID field."
+                raise ValueError(err_msg)
         # check if both stats lists are empty
         if not aggregates_stats_list and not arrays_stats_list:
             err_msg = "You didn't select anything from either Aggregates and Arrays"
-            raise ValueError(err_msg)
-        # check if values in vector_layer temp_index_field are unique
-        id_idx = vector_layer.fields().indexOf(self.temp_index_field)
-        id_unique_values = vector_layer.uniqueValues(id_idx)
-        if len(id_unique_values) < vector_layer.featureCount():
-            err_msg = f"{self.temp_index_field} field values are not unique. Please select unique field as ID field."
             raise ValueError(err_msg)
 
     def set_field_vector_layer(self):

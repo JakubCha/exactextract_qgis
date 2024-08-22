@@ -1,7 +1,6 @@
 from pathlib import Path
-from typing import List, Dict, Union
+from typing import List, Dict
 from exactextract import exact_extract
-import pandas as pd
 
 from qgis.core import (
     QgsTask,
@@ -52,7 +51,7 @@ class CalculateStatsTask(QgsTask):
         self.include_cols: Dict[str, int] = include_cols
         self.geospatial_output: bool = geospatial_output
 
-        self.result_list: List[pd.DataFrame] = result_list
+        self.result_list: List = result_list
 
         self.completed_succesfully = False
 
@@ -75,6 +74,8 @@ class CalculateStatsTask(QgsTask):
                 output="qgis",
             )
         else:
+            import pandas as pd  # noqa
+
             result_stats = exact_extract(
                 vec=self.polygon_layer,
                 rast=self.rasters,
@@ -111,7 +112,7 @@ class MergeStatsTask(QgsTask):
         self,
         description: str,
         flags: QgsTask.Flag,
-        result_list: List[Union[pd.DataFrame, QgsVectorLayer]],
+        result_list: List,
         index_column: str,
         prefix: str,
         geospatial_output: bool,
@@ -123,14 +124,14 @@ class MergeStatsTask(QgsTask):
         Attributes:
             description (str): A description of the task.
             flags (QgsTask.Flag): Flags indicating the task's behavior.
-            result_list (List[pd.DataFrame]): A list of pandas DataFrames containing the statistics to be merged.
+            result_list (List): A list of pandas DataFrames containing the statistics to be merged.
             index_column (str): The name of the index column.
             prefix (str): A prefix string to be added to the column names.
             geo_spatial_output (bool): A boolean indicating whether output is geospatial layer.
         """
         super().__init__(description, flags)
         self.description: str = description
-        self.result_list: List[Union[pd.DataFrame, QgsVectorLayer]] = result_list
+        self.result_list: List = result_list
         self.index_column: str = index_column
         self.prefix: str = prefix
         self.geospatial_output: bool = geospatial_output
@@ -139,7 +140,7 @@ class MergeStatsTask(QgsTask):
         self.source_crs: str = source_crs
 
         self.completed_succesfully = False
-        self.calculated_stats: pd.DataFrame = None
+        self.calculated_stats = None
 
     def run(self):
         """
@@ -171,6 +172,8 @@ class MergeStatsTask(QgsTask):
             }
             processing.run("qgis:mergevectorlayers", parameters)
         else:
+            import pandas as pd
+
             calculated_stats = pd.concat(self.result_list)
 
             if len(self.prefix) > 0:

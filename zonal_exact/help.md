@@ -45,13 +45,6 @@ Path to the output file that result will be written to.
 In current version of the plugin possible outputs are **CSV** or **Parquet** (requires *fastparquet* python library) files.
 **Parquet** format correctly defines the datatype of output columns values.
 
-### Checkbox: Join to Input Vector Layer
-
-If checked columns with calculated values will be joined to input vector, polygon layer. 
-In order to permanently add calculated columns to input vector, it should be saved while joined.
-<br />
-<br />
-
 ## Statistics
 Description of statistics possible to use in tool is available in `exactextract` library [repository](https://github.com/isciences/exactextract/tree/master?tab=readme-ov-file#supported-statistics)
 <br />
