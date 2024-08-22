@@ -3,7 +3,7 @@
     "configurations": [
         {
             "name": "Python: Remote Attach",
-            "type": "python",
+            "type": "debugpy",
             "request": "attach",
             "port": 5678,
             "host": "localhost",
@@ -12,7 +12,8 @@
                     "localRoot": "${workspaceFolder}\\zonal_exact",
                     "remoteRoot": "C:\\Users\\Kuba_MASZYNA\\AppData\\Roaming\\QGIS\\QGIS3\\profiles\\default\\python\\plugins\\zonal_exact"
                 }
-            ]
+            ],
+            "justMyCode": false
         }
     ]
 }

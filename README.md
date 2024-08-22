@@ -40,14 +40,13 @@ The geoprocessesing tool "Zonal statistics" currently implemented in QGIS have a
 There is also option to modify custom functions defined by user earlier. In order to load the code of existing function and modify it the function name should be checked in Custom Function combo box. Custom functions defined in this plugin are removed when plugin is reloaded or qgis is restarted. User should save custom functions for later usage outside of the plugin.
 
 > **Warning:** If there's an error during processing of custom function code whole processing will be stopped. Wrong function may also block QGIS or make it crash.
-- **Usage of QGIS parallel engine**: There is an option to process statistics calculation in multiple parts (subtasks/batch option). Calculation of statistics in this case is done in parallel manner using ``QgsTaskManager`` engine. To configure number of parallel cores it will use you should configure `Max Threads` option in QGIS settings.
+- **Usage of QGIS parallel engine**: There is an option to process statistics calculation in multiple parts (subtasks parameter). Calculation of statistics in this case is done in parallel manner using ``QgsTaskManager`` engine. To configure number of parallel cores it will use you should configure `Max Threads` option in QGIS settings.
 - **Support multiple values rasters**: Selection of multiple rasters will process each raster separately and append to the result.
 - **Support multiband rasters**: In case there's a multiband raster - each band is processed during calculations and is output as separate set of columns.
 - **Support weights raster**
 
 ### Features to be added
 - Move all heavy operations to QGIS ``QgsTask``;
-- Ability to output geospatial layer instead of CSV/Parquet only;
 
 ## Data
 ### Input
@@ -55,12 +54,14 @@ There is also option to modify custom functions defined by user earlier. In orde
 - Raster layer (it has to be locally accessible layer. Database raster layers do not work for now)
 
 ### Output
-- Attribute layer - CSV format is supported by default and Parquet format is supported if `fastparquet` library is installed.
+- Geospatial layer - Geospatial formats are supported with every OGR supported driver. 
+> **Warning:** Support for array output may vary. Use with caution.
+- Attribute layer - CSV format
 
 ## Installation
 
 In current version of the plugin there are 2 packages required and 1 optional package:
-- [**REQUIRED**] Installed through OSGeo4W setup utility (or `pip install pandas`):
-  - pandas
 - [**REQUIRED**] From PyPi repository: `pip install exactextract`
-- [**OPTIONAL**] It's advised to install `fastparquet` (`pip install fastparquet`) to allow saving  results as a parquet file format;
+- [**OPTIONAL**] Installed through OSGeo4W setup utility (or `pip install pandas`):
+  - pandas
+	>**Note:** pandas is required only if user wants to export result to CSV (non-geospatial output)
