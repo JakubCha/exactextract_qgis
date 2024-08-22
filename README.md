@@ -47,7 +47,6 @@ There is also option to modify custom functions defined by user earlier. In orde
 
 ### Features to be added
 - Move all heavy operations to QGIS ``QgsTask``;
-- Ability to output geospatial layer instead of CSV/Parquet only;
 
 ## Data
 ### Input
