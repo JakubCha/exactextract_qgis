@@ -267,16 +267,23 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                 Path(self.dialog_input.output_file_path).stem,
                 "ogr",
             )
-            
+
             total_fields = len(output_attribute_layer.fields())
-            if output_attribute_layer.fields().at(total_fields - 1).name() == 'path' and \
-            output_attribute_layer.fields().at(total_fields - 2).name() == 'layer':
+            if (
+                output_attribute_layer.fields().at(total_fields - 1).name() == "path"
+                and output_attribute_layer.fields().at(total_fields - 2).name()
+                == "layer"
+            ):
                 output_attribute_layer.startEditing()
                 # Delete the last two fields
-                output_attribute_layer.deleteAttribute(total_fields - 1)  # delete path field
-                output_attribute_layer.deleteAttribute(total_fields - 2)  # delete layer field
+                output_attribute_layer.deleteAttribute(
+                    total_fields - 1
+                )  # delete path field
+                output_attribute_layer.deleteAttribute(
+                    total_fields - 2
+                )  # delete layer field
                 output_attribute_layer.commitChanges()
-            
+
             # check if the layer was loaded successfully
             if not output_attribute_layer.isValid():
                 message = (
@@ -439,7 +446,9 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             self.geospatial_output = False
             self.input_attributes_dict = {self.temp_index_field: 0}
         # check if ID field is set if output is not geospatial
-        if (not self.temp_index_field or self.temp_index_field == '') and (not self.geospatial_output):
+        if (not self.temp_index_field or self.temp_index_field == "") and (
+            not self.geospatial_output
+        ):
             err_msg = "You didn't select ID field"
             raise ValueError(err_msg)
         if self.temp_index_field and not self.geospatial_output:

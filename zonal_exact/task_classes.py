@@ -64,8 +64,8 @@ class CalculateStatsTask(QgsTask):
         self.taskChanged.emit(message)
 
         def task_progress_update(frac: float, message: str):
-            self.setProgress(frac * 100)
-        
+            self.setProgress(int(frac * 100))
+
         if self.geospatial_output:
             result_stats = exact_extract(
                 vec=self.polygon_layer,
@@ -76,19 +76,20 @@ class CalculateStatsTask(QgsTask):
                 progress=task_progress_update,
                 include_geom=True,
                 output="qgis",
+                strategy="raster-sequential",
             )
         else:
             import pandas as pd  # noqa
 
-        result_stats = exact_extract(
-            vec=self.polygon_layer,
-            rast=self.rasters,
-            weights=self.weights,
-            ops=self.stats,
-            include_cols=self.include_cols,
-            progress=task_progress_update,
-            output="pandas",
-        )
+            result_stats = exact_extract(
+                vec=self.polygon_layer,
+                rast=self.rasters,
+                weights=self.weights,
+                ops=self.stats,
+                include_cols=self.include_cols,
+                progress=task_progress_update,
+                output="pandas",
+            )
         self.result_list.append(result_stats)
 
         self.completed_succesfully = True
