@@ -85,10 +85,10 @@ def test_task_single_nodata_pixel_polygon(init_calculate_stats_task):
     polygon_on_nodata = result_df.loc[result_df["id"] == 0].iloc[0]
     assert pd.isna(polygon_on_nodata["pytest_raster_band_1_mean"])
     assert pd.isna(polygon_on_nodata["pytest_raster_band_2_mean"])
-    assert polygon_on_nodata["pytest_raster_band_1_max"] == -9999.0
-    assert polygon_on_nodata["pytest_raster_band_2_max"] == -9999.0
-    assert polygon_on_nodata["pytest_raster_band_1_min"] == -9999.0
-    assert polygon_on_nodata["pytest_raster_band_2_min"] == -9999.0
+    assert pd.isna(polygon_on_nodata["pytest_raster_band_1_max"])
+    assert pd.isna(polygon_on_nodata["pytest_raster_band_2_max"])
+    assert pd.isna(polygon_on_nodata["pytest_raster_band_1_min"])
+    assert pd.isna(polygon_on_nodata["pytest_raster_band_2_min"])
 
 
 def test_task_single_pixel_polygon(init_calculate_stats_task):
@@ -135,7 +135,7 @@ def test_task_single_polygon_outside_raster(init_calculate_stats_task):
     polygon_outside_raster = result_df.loc[result_df["id"] == 15].iloc[0]
     assert pd.isna(polygon_outside_raster["pytest_raster_band_1_mean"])
     assert pd.isna(polygon_outside_raster["pytest_raster_band_2_mean"])
-    assert polygon_outside_raster["pytest_raster_band_1_max"] == -9999.0
-    assert polygon_outside_raster["pytest_raster_band_2_max"] == -9999.0
-    assert polygon_outside_raster["pytest_raster_band_1_min"] == -9999.0
-    assert polygon_outside_raster["pytest_raster_band_2_min"] == -9999.0
+    assert pd.isna(polygon_outside_raster["pytest_raster_band_1_max"])
+    assert pd.isna(polygon_outside_raster["pytest_raster_band_2_max"])
+    assert pd.isna(polygon_outside_raster["pytest_raster_band_1_min"])
+    assert pd.isna(polygon_outside_raster["pytest_raster_band_2_min"])
