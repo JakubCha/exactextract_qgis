@@ -33,7 +33,8 @@ The geoprocessesing tool "Zonal statistics" currently implemented in QGIS have a
 >import numpy as np
 >
 >def 90th_perc(values, cov):
->    return np.percentile(values, 90)
+>    # values is a masked array; calling "compressed" will remove nodata values
+>    return np.percentile(values.compressed(), 90)
 > ```
 > If given statistic is checked in Custom Function combo box there will be new column `90th_perc` added.
 
