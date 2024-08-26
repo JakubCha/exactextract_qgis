@@ -29,6 +29,7 @@ class CalculateStatsTask(QgsTask):
         stats: List[str],
         include_cols: Dict[str, int],
         geospatial_output: bool,
+        strategy: str,
     ):
         """
         Attributes:
@@ -40,7 +41,8 @@ class CalculateStatsTask(QgsTask):
         weights (List[str]): The list of weights to use in the statistics.
         stats (List[str]): The list of statistics to calculate.
         include_cols (Dict[str, int]): The dict of column_name: column_id. Column names are to be included in the output.
-        geo_spatial_output (bool): A boolean indicating whether to include the geometry in the output and use QGIS writer in exactextract.
+        geospatial_output (bool): A boolean indicating whether to include the geometry in the output and use QGIS writer in exactextract.
+        strategy (str): The strategy to use in the exactextract function. Can be "feature-sequential" or "raster-sequential".
         """
         super().__init__(description, flags)
         self.description = description
@@ -50,6 +52,7 @@ class CalculateStatsTask(QgsTask):
         self.stats: List[str] = stats
         self.include_cols: Dict[str, int] = include_cols
         self.geospatial_output: bool = geospatial_output
+        self.strategy: str = strategy
 
         self.result_list: List = result_list
 
@@ -76,7 +79,7 @@ class CalculateStatsTask(QgsTask):
                 progress=task_progress_update,
                 include_geom=True,
                 output="qgis",
-                strategy="raster-sequential",
+                strategy=self.strategy,
             )
         else:
             import pandas as pd  # noqa
@@ -89,6 +92,7 @@ class CalculateStatsTask(QgsTask):
                 include_cols=self.include_cols,
                 progress=task_progress_update,
                 output="pandas",
+                strategy=self.strategy,
             )
         self.result_list.append(result_stats)
 

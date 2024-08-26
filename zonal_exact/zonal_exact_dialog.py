@@ -233,6 +233,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
                 stats=stats_list,
                 include_cols=self.input_attributes_dict,
                 geospatial_output=self.geospatial_output,
+                strategy=self.dialog_input.strategy,
             )
             calculation_subtask.taskChanged.connect(self.widget_console.write_info)
             self.tasks.append(calculation_subtask)
@@ -378,6 +379,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             arrays_stats_list=arrays_stats_list,
             prefix=prefix,
             custom_functions_str_list=custom_functions,
+            strategy=self.mStrategyComboBox.currentText(),
         )
 
     def extract_layers_path(self, layers: List[QgsMapLayer]):

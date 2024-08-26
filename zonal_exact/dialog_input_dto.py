@@ -19,6 +19,7 @@ class DialogInputDTO:
     # before conversion to function - function name: function code in str
     custom_functions_str_list: List[str]
     prefix: str
+    strategy: str
     input_layername: str = None
     output_layername: str = None
 
