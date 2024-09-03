@@ -39,14 +39,25 @@ It's up to user to decide whether usage of subtasks is profitable.
 
 > **Note:** Use QGIS parallel engine to create threads
 
+### Processing strategy
+
+Plugin allows to choose what strategy should `exactextract` library use.
+
+#### The "feature sequential" strategy
+In the `feature-sequential` strategy (the default), `exactextract` iterates over the features one at atime, reads the corresponding pixels from each raster, and computes the summary operations.
+This strategy is the most efficient from a memory consumption perspective. The entire vector dataset does not need to be read into memory at once, and statistics for each feature can be flushed to disk before the next feature is read. However, this strategy may be inefficient if the order of features causes the same raster blocks to be read and decompressed multiple times.
+#### The "raster sequential" strategy
+In the `raster-sequential` strategy, `exactextract` iterates over chunks of the raster, finds corresponding features from the vector layer, and updates the summary operations. This guarantees that raster pixels are read only once, which can be useful if network access or compression make the read process slow. However, this strategy requires all vector features and their associated statistics to be kept in memory for the duration of processing. It also causes features spanning multiple chunks to be visited multiple times, which is inefficient.
+
+More about processing strategy and performance caveats can be read at the dedicated `exactextract` [documentation](https://github.com/isciences/exactextract/blob/master/python/doc/performance.rst)
+
 ### Output File Path
 
 Path to the output file that result will be written to.
-In current version of the plugin possible outputs are **CSV** or **Parquet** (requires *fastparquet* python library) files.
-**Parquet** format correctly defines the datatype of output columns values.
+In current version of the plugin possible outputs are **geospatial** (e.g. *geopackage* - .gpkg) formats that are supported with every OGR supported driver or **CSV**.
 
 ## Statistics
-Description of statistics possible to use in tool is available in `exactextract` library [repository](https://github.com/isciences/exactextract/tree/master?tab=readme-ov-file#supported-statistics)
+Description of statistics possible to use in tool is available in `exactextract` library [documentation](https://github.com/isciences/exactextract/blob/master/python/doc/operations.rst)
 <br />
 
 

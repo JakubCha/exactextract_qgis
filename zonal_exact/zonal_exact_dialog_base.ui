@@ -32,122 +32,10 @@
          <property name="sizeConstraint">
           <enum>QLayout::SetMaximumSize</enum>
          </property>
-         <item row="9" column="0">
-          <widget class="QLabel" name="label_7">
-           <property name="text">
-            <string>Custom Function</string>
-           </property>
-          </widget>
-         </item>
-         <item row="7" column="0" alignment="Qt::AlignHCenter">
-          <widget class="QLabel" name="label_5">
-           <property name="text">
-            <string>Aggregates</string>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="0" alignment="Qt::AlignHCenter">
-          <widget class="QLabel" name="label_4">
-           <property name="text">
-            <string>Output File Path</string>
-           </property>
-          </widget>
-         </item>
          <item row="2" column="0" alignment="Qt::AlignHCenter">
           <widget class="QLabel" name="label_2">
            <property name="text">
             <string>Vector</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="1" colspan="5">
-          <widget class="QgsMapLayerComboBox" name="mVectorLayerComboBox"/>
-         </item>
-         <item row="12" column="0" colspan="4">
-          <widget class="QPushButton" name="mCalculateButton">
-           <property name="text">
-            <string>Calculate</string>
-           </property>
-           <property name="checkable">
-            <bool>false</bool>
-           </property>
-           <property name="checked">
-            <bool>false</bool>
-           </property>
-           <property name="autoDefault">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="0" alignment="Qt::AlignHCenter">
-          <widget class="QLabel" name="label_3">
-           <property name="text">
-            <string>Number of 
-subtasks</string>
-           </property>
-          </widget>
-         </item>
-         <item row="8" column="1" colspan="5">
-          <widget class="QgsCheckableComboBox" name="mArraysComboBox">
-           <property name="toolTip">
-            <string>Select statistics that output multiple values (array)</string>
-           </property>
-           <item>
-            <property name="text">
-             <string>cell_id</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>frac</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>center_x</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>center_y</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>coverage</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>values</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>weights</string>
-            </property>
-           </item>
-           <item>
-            <property name="text">
-             <string>weighted_frac</string>
-            </property>
-           </item>
-          </widget>
-         </item>
-         <item row="10" column="0" colspan="6" alignment="Qt::AlignVCenter">
-          <widget class="QProgressBar" name="mProgressBar">
-           <property name="value">
-            <number>0</number>
-           </property>
-           <property name="textVisible">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="5">
-          <widget class="QgsMapLayerComboBox" name="mWeightsLayerComboBox">
-           <property name="allowEmptyLayer">
-            <bool>true</bool>
            </property>
           </widget>
          </item>
@@ -262,58 +150,61 @@ subtasks</string>
            </item>
           </widget>
          </item>
-         <item row="1" column="1" colspan="3">
-          <widget class="MultiRasterLayerSelectionWidget" name="mRasterLayersList">
-           <property name="enabled">
+         <item row="11" column="0" colspan="6">
+          <widget class="QPlainTextEdit" name="mPlainText">
+           <property name="readOnly">
             <bool>true</bool>
            </property>
-           <property name="selectionMode">
-            <enum>QAbstractItemView::MultiSelection</enum>
-           </property>
-           <property name="horizontalScrollMode">
-            <enum>QAbstractItemView::ScrollPerItem</enum>
-           </property>
-          </widget>
-         </item>
-         <item row="12" column="5">
-          <widget class="QDialogButtonBox" name="mButtonBox">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="standardButtons">
-            <set>QDialogButtonBox::Cancel</set>
-           </property>
-           <property name="centerButtons">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0" alignment="Qt::AlignHCenter">
-          <widget class="QLabel" name="label">
-           <property name="text">
-            <string>Values</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="4">
-          <widget class="QLabel" name="label_12">
-           <property name="text">
-            <string>Weights</string>
-           </property>
-          </widget>
-         </item>
-         <item row="9" column="5">
-          <widget class="QPushButton" name="mAddModifyMetricButton">
-           <property name="text">
-            <string>Add/Modify Custom Metric</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="1" colspan="2">
-          <widget class="QLineEdit" name="mPrefixEdit">
-           <property name="text">
+           <property name="plainText">
             <string/>
            </property>
+          </widget>
+         </item>
+         <item row="8" column="1" colspan="5">
+          <widget class="QgsCheckableComboBox" name="mArraysComboBox">
+           <property name="toolTip">
+            <string>Select statistics that output multiple values (array)</string>
+           </property>
+           <item>
+            <property name="text">
+             <string>cell_id</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>frac</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>center_x</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>center_y</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>coverage</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>values</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>weights</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>weighted_frac</string>
+            </property>
+           </item>
           </widget>
          </item>
          <item row="6" column="1" colspan="4">
@@ -335,6 +226,105 @@ subtasks</string>
            </property>
           </widget>
          </item>
+         <item row="1" column="1" colspan="3">
+          <widget class="MultiRasterLayerSelectionWidget" name="mRasterLayersList">
+           <property name="enabled">
+            <bool>true</bool>
+           </property>
+           <property name="selectionMode">
+            <enum>QAbstractItemView::MultiSelection</enum>
+           </property>
+           <property name="horizontalScrollMode">
+            <enum>QAbstractItemView::ScrollPerItem</enum>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="0">
+          <widget class="QLabel" name="label_11">
+           <property name="text">
+            <string>ID Column</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="1" colspan="2">
+          <widget class="QLineEdit" name="mPrefixEdit">
+           <property name="text">
+            <string/>
+           </property>
+          </widget>
+         </item>
+         <item row="7" column="0" alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="label_5">
+           <property name="text">
+            <string>Aggregates</string>
+           </property>
+          </widget>
+         </item>
+         <item row="3" column="1" colspan="3">
+          <widget class="QgsFieldComboBox" name="mFieldComboBox">
+           <property name="allowEmptyFieldName">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="4">
+          <widget class="QLabel" name="label_12">
+           <property name="text">
+            <string>Weights</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="5">
+          <widget class="QgsMapLayerComboBox" name="mWeightsLayerComboBox">
+           <property name="allowEmptyLayer">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="9" column="5">
+          <widget class="QPushButton" name="mAddModifyMetricButton">
+           <property name="text">
+            <string>Add/Modify Custom Metric</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="1" colspan="2">
+          <widget class="QSpinBox" name="mSubtasksSpinBox">
+           <property name="value">
+            <number>1</number>
+           </property>
+          </widget>
+         </item>
+         <item row="9" column="1" colspan="4">
+          <widget class="QgsCheckableComboBox" name="mCustomFunctionsComboBox"/>
+         </item>
+         <item row="1" column="0" alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="label">
+           <property name="text">
+            <string>Values</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0" alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="label_4">
+           <property name="text">
+            <string>Output File Path</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="1" colspan="5">
+          <widget class="QgsMapLayerComboBox" name="mVectorLayerComboBox"/>
+         </item>
+         <item row="10" column="0" colspan="6" alignment="Qt::AlignVCenter">
+          <widget class="QProgressBar" name="mProgressBar">
+           <property name="value">
+            <number>0</number>
+           </property>
+           <property name="textVisible">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
          <item row="8" column="0" alignment="Qt::AlignHCenter">
           <widget class="QLabel" name="label_6">
            <property name="text">
@@ -342,13 +332,39 @@ subtasks</string>
            </property>
           </widget>
          </item>
-         <item row="9" column="1" colspan="4">
-          <widget class="QgsCheckableComboBox" name="mCustomFunctionsComboBox"/>
+         <item row="9" column="0">
+          <widget class="QLabel" name="label_7">
+           <property name="text">
+            <string>Custom Function</string>
+           </property>
+          </widget>
          </item>
-         <item row="5" column="1" colspan="2">
-          <widget class="QSpinBox" name="mSubtasksSpinBox">
-           <property name="value">
-            <number>1</number>
+         <item row="12" column="5">
+          <widget class="QDialogButtonBox" name="mButtonBox">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="standardButtons">
+            <set>QDialogButtonBox::Cancel</set>
+           </property>
+           <property name="centerButtons">
+            <bool>true</bool>
+           </property>
+          </widget>
+         </item>
+         <item row="12" column="0" colspan="4">
+          <widget class="QPushButton" name="mCalculateButton">
+           <property name="text">
+            <string>Calculate</string>
+           </property>
+           <property name="checkable">
+            <bool>false</bool>
+           </property>
+           <property name="checked">
+            <bool>false</bool>
+           </property>
+           <property name="autoDefault">
+            <bool>false</bool>
            </property>
           </widget>
          </item>
@@ -367,27 +383,41 @@ subtasks</string>
            </property>
           </widget>
          </item>
-         <item row="11" column="0" colspan="6">
-          <widget class="QPlainTextEdit" name="mPlainText">
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-           <property name="plainText">
-            <string/>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="1" colspan="3">
-          <widget class="QgsFieldComboBox" name="mFieldComboBox">
-           <property name="allowEmptyFieldName">
-            <bool>true</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0">
-          <widget class="QLabel" name="label_11">
+         <item row="5" column="0" alignment="Qt::AlignHCenter">
+          <widget class="QLabel" name="label_3">
            <property name="text">
-            <string>ID Column</string>
+            <string>Number of 
+subtasks</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="4" colspan="2">
+          <widget class="QComboBox" name="mStrategyComboBox">
+           <property name="layoutDirection">
+            <enum>Qt::LeftToRight</enum>
+           </property>
+           <property name="autoFillBackground">
+            <bool>false</bool>
+           </property>
+           <property name="editable">
+            <bool>false</bool>
+           </property>
+           <item>
+            <property name="text">
+             <string>feature-sequential</string>
+            </property>
+           </item>
+           <item>
+            <property name="text">
+             <string>raster-sequential</string>
+            </property>
+           </item>
+          </widget>
+         </item>
+         <item row="5" column="3">
+          <widget class="QLabel" name="label_8">
+           <property name="text">
+            <string>Processing strategy</string>
            </property>
           </widget>
          </item>

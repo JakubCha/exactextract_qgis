@@ -1,3 +1,4 @@
+pandas
 pre-commit
 ruff
 pytest

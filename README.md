@@ -61,8 +61,13 @@ There is also option to modify custom functions defined by user earlier. In orde
 
 ## Installation
 
-In current version of the plugin there are 2 packages required and 1 optional package:
+In current version of the plugin there i 1 required and 1 optional package:
 - [**REQUIRED**] From PyPi repository: `pip install exactextract`
 - [**OPTIONAL**] Installed through OSGeo4W setup utility (or `pip install pandas`):
   - pandas
 	>**Note:** pandas is required only if user wants to export result to CSV (non-geospatial output)
+If `exactextract` package is not installed, plugin will try to install it by itself.
+
+### Update exactextract
+If there's need to update `exactextract` user should close QGIS, open OSGeo4WShell and write:
+`pip install exactextract --upgrade`
