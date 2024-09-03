@@ -28,6 +28,7 @@ def init_calculate_stats_task(setup_layers):
         stats_to_calculate,
         ["id"],
         geospatial_output=False,
+        strategy="feature-sequential",
     )
     task.taskChanged.connect(console.write_info)
 

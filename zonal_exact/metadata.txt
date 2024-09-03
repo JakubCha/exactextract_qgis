@@ -6,11 +6,13 @@
 name=Zonal Exact Extract
 qgisMinimumVersion=3.30
 description=Zonal Statistics of rasters using Exact Extract library
-version=0.43
+version=0.5
 author=Jakub Charyton
 email=jakub.charyton@gmail.com
 
-about=Zonal Statistics using ExactExtract library. This plugin requires pandas and exactextract libraries installed in python. 
+about=Zonal Statistics using ExactExtract library. This plugin requires exactextract library installed with python. 
+    If there's need to update `exactextract` user should close QGIS, open OSGeo4WShell and write:
+    pip install exactextract --upgrade
     You can read more about plugin and installation requirements in plugin repository / homepage.
 
     This library allows to treat pixel cells as partially covered by polygons using weighting according to the extent of cover. If you want to know more about the library working in the backend of this plugin it's highly recommend to visit its github repository.

@@ -83,9 +83,6 @@ for line in raw_txt.split("\n"):
 
 packages_to_install = [
     PackageToInstall(
-        name="pandas", version=libraries_versions["pandas"], import_name="pandas"
-    ),
-    PackageToInstall(
         name="exactextract",
         version=libraries_versions["exactextract"],
         import_name="exactextract",

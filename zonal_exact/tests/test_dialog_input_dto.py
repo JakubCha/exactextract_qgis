@@ -27,6 +27,7 @@ def setup_dialog_input_dto(tmp_path):
         prefix="test",
         input_layername="input",
         output_layername="output",
+        strategy="feature-sequential",
     )
 
     return dto

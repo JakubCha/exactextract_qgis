@@ -287,6 +287,7 @@ def test_process_calculations_single_task(tmp_path, dialog, setup_layers):
         arrays_stats_list=[],
         prefix="prefix",
         custom_functions_str_list=[],
+        strategy="feature-sequential",
     )
 
     dialog.temp_index_field = "id"
@@ -390,6 +391,7 @@ def test_process_calculations_multiple_tasks(tmp_path, dialog, setup_layers):
         arrays_stats_list=[],
         prefix="prefix",
         custom_functions_str_list=[],
+        strategy="feature-sequential",
     )
 
     dialog.temp_index_field = "id"
@@ -483,6 +485,7 @@ def test_process_calculations_geospatial_output_created(
         arrays_stats_list=[],
         prefix="prefix",
         custom_functions_str_list=[],
+        strategy="feature-sequential",
     )
 
     dialog.control_input(
@@ -537,6 +540,7 @@ def test_process_calculations_geospatial_output_contents(
         arrays_stats_list=[],
         prefix="prefix",
         custom_functions_str_list=[],
+        strategy="feature-sequential",
     )
 
     dialog.control_input(
