@@ -5,7 +5,7 @@ https://github.com/leixingyu/codeEditor/tree/master
 
 from qgis.PyQt import QtCore, QtGui, QtWidgets
 
-from .highlighter.pyHighlight import PythonHighlighter
+# from .highlighter.pyHighlight import PythonHighlighter
 
 DARK_BLUE = QtGui.QColor(118, 150, 185)
 
@@ -20,7 +20,7 @@ class CodeEditorUI(QtWidgets.QDialog):
 
         self.code_editor = CodeEditor()
         self.code_editor.set_code(code)
-        self.__highlighter = PythonHighlighter(self.code_editor.document())
+        # self.__highlighter = PythonHighlighter(self.code_editor.document())
 
         # Create OK and Cancel buttons
         self.ok_button = QtWidgets.QPushButton("OK")

@@ -118,6 +118,7 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.editor.setWindowTitle("Custom Function Code Editor")
 
         self.setupUi(self)
+        self.populate_comboboxes()
         self.mRasterLayersList.setup(self.project)
         self.helpTextBrowser.setSearchPaths([os.path.dirname(__file__)])
         self.helpTextBrowser.setSource(QtCore.QUrl("help.md"))
@@ -148,6 +149,41 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
 
         self.mAddModifyMetricButton.clicked.connect(self.edit_metric_function)
         self.editor.codeSubmitted.connect(self.modify_code)
+
+    def populate_comboboxes(self):
+        aggregates_stats_list = [
+            "count",
+            "majority",
+            "max",
+            "max_center_x",
+            "max_center_y",
+            "mean",
+            "median",
+            "min",
+            "min_center_x",
+            "min_center_y",
+            "minority",
+            "stdev",
+            "sum",
+            "variance",
+            "variety",
+            "weighted_mean",
+            "weighted_sum",
+            "weighted_sum",
+            "weighted_variance",
+        ]
+        arrays_stats_list = [
+            "cell_id",
+            "frac",
+            "center_x",
+            "center_y",
+            "coverage",
+            "values",
+            "weights",
+            "weighted_frac",
+        ]
+        self.mAggregatesComboBox.addItems(aggregates_stats_list)
+        self.mArraysComboBox.addItems(arrays_stats_list)
 
     def calculate(self):
         """
