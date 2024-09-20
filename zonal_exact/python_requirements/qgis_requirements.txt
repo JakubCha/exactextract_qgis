@@ -1,2 +1,2 @@
 # This requirements files should be run in OSGEO4W shell corresponding to QGIS instance to make sure that it's installed for correct python
-exactextract
+exactextract==0.2.0
