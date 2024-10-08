@@ -68,6 +68,16 @@ In current version of the plugin there i 1 required and 1 optional package:
 	>**Note:** pandas is required only if user wants to export result to CSV (non-geospatial output)
 If `exactextract` package is not installed, plugin will try to install it by itself.
 
-### Update exactextract
-If there's need to update `exactextract` user should close QGIS, open OSGeo4WShell and write:
-`pip install exactextract --upgrade`
+### Automatic
+This plugin comes with automatic installation module which installs `exactextract` to QGIS user `profile` directory.
+### Manual
+User might also install library by himself using `OSGeo4W Shell` command: `pip install exactextract`
+
+## Update `exactextract`
+#### Plugin was installed automatically
+Similar to `Manual` installation step input command: `pip install exactextract --upgrade`
+#### Plugin was installed with `OSGeo4W Shell`
+1. Close QGIS.
+2. Go to `C:\Users\<Username>\AppData\Roaming\QGIS\QGIS3\profiles\<profile name>\python\plugins\python3.9`
+and remove directories with `exactextract` in name.
+3. Open QGIS and let plugin install the package using `Automatic` method.
