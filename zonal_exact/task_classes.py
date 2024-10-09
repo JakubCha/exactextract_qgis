@@ -58,6 +58,7 @@ class CalculateStatsTask(QgsTask):
         self.result_list: List = result_list
 
         self.completed_succesfully = False
+        self.error_message = None
 
     def run(self):
         """
@@ -102,8 +103,8 @@ class CalculateStatsTask(QgsTask):
             return True
         except TypeError as ex:
             self.completed_succesfully = False
-            QgsMessageLog.logMessage(f"Error in task: {self.description}, {ex}. Probably there's an old version of exactextract installed. \
-                Follow the instructions in 'library' tab to update the library.")
+            self.error_message = f"Error in task: {self.description}, {ex}. Probably there's an old version of exactextract installed. Follow the instructions in 'Library' tab to update the exactextract library."
+            QgsMessageLog.logMessage(self.error_message)
             return False
             
 
@@ -115,6 +116,8 @@ class CalculateStatsTask(QgsTask):
             result (bool):  The result of the task. True if  the task was successful otherwise False.
         """
         message = f"Finished task: {self.description}, result: {'Successful' if result else 'Failed'}"
+        if self.error_message is not None:
+            message += f"\nError: {self.error_message}"
         self.taskChanged.emit(message)
 
 

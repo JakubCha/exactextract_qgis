@@ -61,7 +61,7 @@ There is also option to modify custom functions defined by user earlier. In orde
 
 ## Installation
 
-In current version of the plugin there i 1 required and 1 optional package:
+In current version of the plugin there is 1 required and 1 optional package:
 - [**REQUIRED**] From PyPi repository: `pip install exactextract`
 - [**OPTIONAL**] Installed through OSGeo4W setup utility (or `pip install pandas`):
   - pandas
