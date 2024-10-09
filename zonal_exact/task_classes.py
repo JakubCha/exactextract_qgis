@@ -1,5 +1,6 @@
 from pathlib import Path
 from typing import List, Dict
+
 from exactextract import exact_extract
 
 from qgis.core import (
@@ -57,6 +58,7 @@ class CalculateStatsTask(QgsTask):
         self.result_list: List = result_list
 
         self.completed_succesfully = False
+        self.error_message = None
 
     def run(self):
         """
@@ -69,35 +71,42 @@ class CalculateStatsTask(QgsTask):
         def task_progress_update(frac: float, message: str):
             self.setProgress(int(frac * 100))
 
-        if self.geospatial_output:
-            result_stats = exact_extract(
-                vec=self.polygon_layer,
-                rast=self.rasters,
-                weights=self.weights,
-                ops=self.stats,
-                include_cols=list(self.include_cols.keys()),
-                progress=task_progress_update,
-                include_geom=True,
-                output="qgis",
-                strategy=self.strategy,
-            )
-        else:
-            import pandas as pd  # noqa
+        try:
+            if self.geospatial_output:
+                result_stats = exact_extract(
+                    vec=self.polygon_layer,
+                    rast=self.rasters,
+                    weights=self.weights,
+                    ops=self.stats,
+                    include_cols=list(self.include_cols.keys()),
+                    progress=task_progress_update,
+                    include_geom=True,
+                    output="qgis",
+                    strategy=self.strategy,
+                )
+            else:
+                import pandas as pd  # noqa
 
-            result_stats = exact_extract(
-                vec=self.polygon_layer,
-                rast=self.rasters,
-                weights=self.weights,
-                ops=self.stats,
-                include_cols=self.include_cols,
-                progress=task_progress_update,
-                output="pandas",
-                strategy=self.strategy,
-            )
-        self.result_list.append(result_stats)
+                result_stats = exact_extract(
+                    vec=self.polygon_layer,
+                    rast=self.rasters,
+                    weights=self.weights,
+                    ops=self.stats,
+                    include_cols=self.include_cols,
+                    progress=task_progress_update,
+                    output="pandas",
+                    strategy=self.strategy,
+                )
+            self.result_list.append(result_stats)
 
-        self.completed_succesfully = True
-        return True
+            self.completed_succesfully = True
+            return True
+        except TypeError as ex:
+            self.completed_succesfully = False
+            self.error_message = f"Error in task: {self.description}, {ex}. Probably there's an old version of exactextract installed. Follow the instructions in 'Library' tab to update the exactextract library."
+            QgsMessageLog.logMessage(self.error_message)
+            return False
+            
 
     def finished(self, result: bool):
         """
@@ -107,6 +116,8 @@ class CalculateStatsTask(QgsTask):
             result (bool):  The result of the task. True if  the task was successful otherwise False.
         """
         message = f"Finished task: {self.description}, result: {'Successful' if result else 'Failed'}"
+        if self.error_message is not None:
+            message += f"\nError: {self.error_message}"
         self.taskChanged.emit(message)
 
 

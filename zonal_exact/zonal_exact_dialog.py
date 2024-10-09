@@ -120,9 +120,13 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
         self.setupUi(self)
         self.populate_comboboxes()
         self.mRasterLayersList.setup(self.project)
+        
         self.helpTextBrowser.setSearchPaths([os.path.dirname(__file__)])
         self.helpTextBrowser.setSource(QtCore.QUrl("help.md"))
         self.helpTextBrowser.setOpenExternalLinks(True)
+        self.libraryTextBrowser.setSearchPaths([os.path.dirname(__file__)])
+        self.libraryTextBrowser.setSource(QtCore.QUrl("library.md"))
+        self.libraryTextBrowser.setOpenExternalLinks(True)
 
         self.set_id_field()
 

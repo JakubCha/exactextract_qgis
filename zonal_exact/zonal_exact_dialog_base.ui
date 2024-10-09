@@ -311,6 +311,21 @@ p, li { white-space: pre-wrap; }
        </item>
       </layout>
      </widget>
+     <widget class="QWidget" name="LibraryTab">
+      <attribute name="title">
+       <string>Library</string>
+      </attribute>
+      <widget class="QTextBrowser" name="libraryTextBrowser">
+       <property name="geometry">
+        <rect>
+         <x>9</x>
+         <y>9</y>
+         <width>584</width>
+         <height>676</height>
+        </rect>
+       </property>
+      </widget>
+     </widget>
     </widget>
    </item>
   </layout>
