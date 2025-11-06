@@ -41,6 +41,7 @@ from qgis.core import (
     QgsFeatureRequest,
     QgsVectorFileWriter,
 )
+from PyQt5.QtCore import QVariant
 
 from .dialog_input_dto import DialogInputDTO
 from .user_communication import UserCommunication, WidgetPlainTextWriter
@@ -481,9 +482,26 @@ class ZonalExactDialog(QtWidgets.QDialog, FORM_CLASS):
             else:
                 self.geospatial_output = True
                 fields = vector_layer.fields()
-                self.input_attributes_dict = {
-                    name: fields.indexFromName(name) for name in fields.names()
-                }
+                # Filter out fields with zero length that cause issues with exactextract
+                # (string and double fields with 0 length, but not integer fields)
+                # This fixes issue #32
+                self.input_attributes_dict = {}
+                for name in fields.names():
+                    field = fields.field(name)
+                    field_length = field.length()
+                    field_type = field.type()
+
+                    # Skip fields with zero length if they are String or Double types
+                    # Integer fields with zero length are OK
+                    if field_length == 0:
+                        if field_type in (QVariant.String, QVariant.Double):
+                            QgsMessageLog.logMessage(
+                                f"Skipping field '{name}' with zero length and type "
+                                f"{field.typeName()} to avoid exactextract error"
+                            )
+                            continue
+
+                    self.input_attributes_dict[name] = fields.indexFromName(name)
         else:
             self.geospatial_output = False
             self.input_attributes_dict = {self.temp_index_field: 0}
